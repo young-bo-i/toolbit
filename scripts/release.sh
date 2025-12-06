@@ -129,6 +129,19 @@ create_and_push_tag() {
     local version=$1
     local tag="v$version"
     
+    # 先同步远程代码（避免 CI 更新 Cask 后产生冲突）
+    info "同步远程代码..."
+    git fetch origin main
+    
+    # 检查是否需要 rebase
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse origin/main)
+    
+    if [ "$local_commit" != "$remote_commit" ]; then
+        info "检测到远程有更新，正在同步..."
+        git pull --rebase origin main || error "同步失败，请手动处理冲突"
+    fi
+    
     # 检查 tag 是否已存在
     if git rev-parse "$tag" >/dev/null 2>&1; then
         warning "Tag $tag 已存在"
@@ -148,8 +161,16 @@ create_and_push_tag() {
     info "创建 tag: $tag"
     git tag "$tag"
     
-    info "推送代码到远程..."
-    git push origin main
+    # 只有本地有新提交时才推送代码
+    local_commit=$(git rev-parse HEAD)
+    remote_commit=$(git rev-parse origin/main)
+    
+    if [ "$local_commit" != "$remote_commit" ]; then
+        info "推送代码到远程..."
+        git push origin main
+    else
+        info "本地代码与远程一致，跳过代码推送"
+    fi
     
     info "推送 tag 到远程..."
     git push origin "$tag"
