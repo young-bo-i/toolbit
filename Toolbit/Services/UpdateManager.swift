@@ -55,14 +55,17 @@ enum UpdateStatus: Equatable {
     case noUpdate
     case downloading(progress: Double)
     case readyToInstall(localPath: URL)
+    case installing  // 正在自动安装
     case installingViaHomebrew
     case homebrewSuccess
+    case installSuccess  // 自动安装成功
     case error(message: String)
     
     static func == (lhs: UpdateStatus, rhs: UpdateStatus) -> Bool {
         switch (lhs, rhs) {
         case (.idle, .idle), (.checking, .checking), (.noUpdate, .noUpdate),
-             (.installingViaHomebrew, .installingViaHomebrew), (.homebrewSuccess, .homebrewSuccess):
+             (.installingViaHomebrew, .installingViaHomebrew), (.homebrewSuccess, .homebrewSuccess),
+             (.installing, .installing), (.installSuccess, .installSuccess):
             return true
         case let (.available(v1, _, _), .available(v2, _, _)):
             return v1 == v2
@@ -192,8 +195,11 @@ class UpdateManager: ObservableObject {
             
             // 比较版本
             if isNewerVersion(latestVersion, than: currentVersion) {
-                // 查找 .dmg 或 .zip 文件
-                if let asset = release.assets.first(where: { $0.name.hasSuffix(".dmg") || $0.name.hasSuffix(".zip") }) {
+                // 优先查找 .zip 文件（支持自动安装），其次 .dmg
+                let zipAsset = release.assets.first(where: { $0.name.hasSuffix(".zip") })
+                let dmgAsset = release.assets.first(where: { $0.name.hasSuffix(".dmg") })
+                
+                if let asset = zipAsset ?? dmgAsset {
                     status = .available(
                         version: latestVersion,
                         downloadUrl: asset.browserDownloadUrl,
@@ -297,6 +303,8 @@ class UpdateManager: ObservableObject {
     }
     
     private func installFromZip(_ zipPath: URL) {
+        status = .installing
+        
         let tempDir = FileManager.default.temporaryDirectory
         let extractDir = tempDir.appendingPathComponent("Toolbit_Update")
         
@@ -308,11 +316,13 @@ class UpdateManager: ObservableObject {
             try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
             
             // 解压 ZIP
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-            process.arguments = ["-o", zipPath.path, "-d", extractDir.path]
-            try process.run()
-            process.waitUntilExit()
+            let unzipProcess = Process()
+            unzipProcess.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+            unzipProcess.arguments = ["-o", zipPath.path, "-d", extractDir.path]
+            unzipProcess.standardOutput = nil
+            unzipProcess.standardError = nil
+            try unzipProcess.run()
+            unzipProcess.waitUntilExit()
             
             // 查找 .app 文件
             let contents = try FileManager.default.contentsOfDirectory(at: extractDir, includingPropertiesForKeys: nil)
@@ -333,30 +343,49 @@ class UpdateManager: ObservableObject {
                 targetPath = applicationsPath
             }
             
-            // 创建安装脚本
+            // 创建安装脚本 - 等待当前应用退出后再替换
             let scriptPath = tempDir.appendingPathComponent("install_update.sh")
             let script = """
             #!/bin/bash
+            # 等待当前应用完全退出
             sleep 1
+            
+            # 删除旧版本
             rm -rf "\(targetPath.path)"
+            
+            # 复制新版本
             cp -R "\(appURL.path)" "\(targetPath.path)"
+            
+            # 移除隔离属性
             xattr -cr "\(targetPath.path)"
+            
+            # 启动新版本
             open "\(targetPath.path)"
+            
+            # 清理临时文件
             rm -rf "\(extractDir.path)"
             rm -f "\(zipPath.path)"
+            rm -f "\(scriptPath.path)"
             """
             
             try script.write(to: scriptPath, atomically: true, encoding: .utf8)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath.path)
             
-            // 执行安装脚本
+            // 在后台执行安装脚本
             let installProcess = Process()
             installProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
             installProcess.arguments = [scriptPath.path]
+            installProcess.standardOutput = nil
+            installProcess.standardError = nil
             try installProcess.run()
             
-            // 退出当前应用
-            NSApplication.shared.terminate(nil)
+            // 显示成功状态，然后退出
+            status = .installSuccess
+            
+            // 延迟退出，让用户看到成功提示
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                NSApplication.shared.terminate(nil)
+            }
             
         } catch {
             status = .error(message: "安装失败: \(error.localizedDescription)")

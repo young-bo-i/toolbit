@@ -168,6 +168,35 @@ struct UpdateView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+        case .installing:
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                
+                Text("正在安装更新...")
+                    .font(.headline)
+                
+                Text("请稍候，安装完成后将自动重启")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+        case .installSuccess:
+            VStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                
+                Text("安装成功！")
+                    .font(.headline)
+                
+                Text("应用即将重启...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -271,7 +300,7 @@ struct UpdateView: View {
                     .buttonStyle(.borderedProminent)
                 }
                 
-            case .checking, .downloading, .installingViaHomebrew:
+            case .checking, .downloading, .installingViaHomebrew, .installing, .installSuccess:
                 EmptyView()
                 
             case .homebrewSuccess:
