@@ -426,12 +426,18 @@ class UpdateManager: ObservableObject {
             installProcess.currentDirectoryURL = tempDir
             try installProcess.run()
             
-            // 显示成功状态，然后退出
+            // 显示成功状态，然后强制退出
             status = .installSuccess
             
-            // 延迟退出，让用户看到成功提示，同时给脚本时间启动
+            // 使用 exit() 强制退出，确保应用一定会关闭
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                // 先尝试正常退出
                 NSApplication.shared.terminate(nil)
+                
+                // 如果 terminate 被阻止，强制退出
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    exit(0)
+                }
             }
             
         } catch {
