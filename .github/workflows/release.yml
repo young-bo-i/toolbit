@@ -46,18 +46,18 @@ jobs:
     - name: Update version in project
       run: |
         # 如果 Info.plist 存在，更新版本号
-        if [ -f "DevToolbox/Info.plist" ]; then
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.get_version.outputs.VERSION }}" DevToolbox/Info.plist 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" DevToolbox/Info.plist 2>/dev/null || true
+        if [ -f "Toolbit/Info.plist" ]; then
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.get_version.outputs.VERSION }}" Toolbit/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" Toolbit/Info.plist 2>/dev/null || true
         fi
     
     - name: Build application
       run: |
-        xcodebuild -project DevToolbox.xcodeproj \
-          -scheme DevToolbox \
+        xcodebuild -project Toolbit.xcodeproj \
+          -scheme Toolbit \
           -configuration Release \
           -derivedDataPath build \
-          -archivePath build/DevToolbox.xcarchive \
+          -archivePath build/Toolbit.xcarchive \
           archive \
           CODE_SIGN_IDENTITY="-" \
           CODE_SIGNING_REQUIRED=NO \
@@ -69,37 +69,37 @@ jobs:
       run: |
         # 从 archive 中提取 app
         mkdir -p build/export
-        cp -R build/DevToolbox.xcarchive/Products/Applications/DevToolbox.app build/export/
+        cp -R build/Toolbit.xcarchive/Products/Applications/Toolbit.app build/export/
         
         # 移除签名相关的扩展属性
-        xattr -cr build/export/DevToolbox.app
+        xattr -cr build/export/Toolbit.app
     
     - name: Create DMG
       run: |
         # 创建 DMG
         mkdir -p build/dmg
-        cp -R build/export/DevToolbox.app build/dmg/
+        cp -R build/export/Toolbit.app build/dmg/
         
         # 创建 Applications 快捷方式
         ln -s /Applications build/dmg/Applications
         
         # 创建 DMG 文件
-        hdiutil create -volname "DevToolbox" \
+        hdiutil create -volname "Toolbit" \
           -srcfolder build/dmg \
           -ov -format UDZO \
-          build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg
+          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg
     
     - name: Create ZIP
       run: |
         cd build/export
-        zip -r ../DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip DevToolbox.app
+        zip -r ../Toolbit-${{ steps.get_version.outputs.VERSION }}.zip Toolbit.app
     
     - name: Calculate checksums
       id: checksums
       run: |
         cd build
-        DMG_SHA256=$(shasum -a 256 DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg | awk '{print $1}')
-        ZIP_SHA256=$(shasum -a 256 DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip | awk '{print $1}')
+        DMG_SHA256=$(shasum -a 256 Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg | awk '{print $1}')
+        ZIP_SHA256=$(shasum -a 256 Toolbit-${{ steps.get_version.outputs.VERSION }}.zip | awk '{print $1}')
         echo "DMG_SHA256=$DMG_SHA256" >> $GITHUB_OUTPUT
         echo "ZIP_SHA256=$ZIP_SHA256" >> $GITHUB_OUTPUT
         echo "DMG SHA256: $DMG_SHA256"
@@ -147,16 +147,16 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg
-          build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip
+          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg
+          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.zip
         body: |
-          ## DevToolbox v${{ steps.get_version.outputs.VERSION }}
+          ## Toolbit v${{ steps.get_version.outputs.VERSION }}
           
           ### 📥 下载
           | 文件 | 说明 |
           |------|------|
-          | `DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg` | DMG 安装包（推荐） |
-          | `DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip` | ZIP 压缩包 |
+          | `Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg` | DMG 安装包（推荐） |
+          | `Toolbit-${{ steps.get_version.outputs.VERSION }}.zip` | ZIP 压缩包 |
           
           ### 🚀 安装方式
           
@@ -173,11 +173,11 @@ jobs:
           #### 方式二：DMG 安装
           1. 下载 DMG 文件
           2. 双击打开 DMG
-          3. 将 DevToolbox 拖到 Applications 文件夹
+          3. 将 Toolbit 拖到 Applications 文件夹
           4. 首次打开需要在「系统设置 → 隐私与安全性」中允许
           
           #### 方式三：应用内更新
-          打开 DevToolbox → 菜单栏 → 检查更新
+          打开 Toolbit → 菜单栏 → 检查更新
           
           ### 🔐 校验和
           | 文件 | SHA256 |
@@ -197,7 +197,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: "!startsWith(github.ref, 'refs/tags/')"
       with:
-        name: DevToolbox-${{ steps.get_version.outputs.VERSION }}
+        name: Toolbit-${{ steps.get_version.outputs.VERSION }}
         path: |
-          build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg
-          build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip
+          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg
+          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.zip

@@ -13,10 +13,9 @@ cask "toolbit" do
   version "1.0.0"
   sha256 "24dae1ffd71405c7c434031de86e998ecc6e76244b7490379870d037883a6c2d"  # 由 GitHub Actions 自动更新
 
-  url "https://github.com/young-bo-i/toolbit/releases/download/v#{version}/DevToolbox-#{version}.zip",
+  url "https://github.com/young-bo-i/toolbit/releases/download/v#{version}/Toolbit-#{version}.zip",
       verified: "github.com/young-bo-i/toolbit/"
   name "Toolbit"
-  name "DevToolbox"
   name "开发百宝箱"
   desc "Developer toolbox with various utilities for daily development"
   homepage "https://github.com/young-bo-i/toolbit"
@@ -31,24 +30,24 @@ cask "toolbit" do
   depends_on macos: ">= :ventura"
 
   # 安装应用
-  app "DevToolbox.app"
+  app "Toolbit.app"
 
   # 安装后提示
   postflight do
     # 移除隔离属性，避免首次打开时的安全提示
     system_command "/usr/bin/xattr",
-                   args: ["-cr", "#{appdir}/DevToolbox.app"],
+                   args: ["-cr", "#{appdir}/Toolbit.app"],
                    sudo: false
   end
 
   # 卸载时清理
-  uninstall quit: "com.devtools.DevToolbox"
+  uninstall quit: "com.toolbit.app"
 
   # 彻底清理（zap）
   zap trash: [
-    "~/Library/Preferences/com.devtools.DevToolbox.plist",
-    "~/Library/Caches/com.devtools.DevToolbox",
-    "~/Library/Application Support/DevToolbox",
-    "~/Library/Saved Application State/com.devtools.DevToolbox.savedState",
+    "~/Library/Preferences/com.toolbit.app.plist",
+    "~/Library/Caches/com.toolbit.app",
+    "~/Library/Application Support/Toolbit",
+    "~/Library/Saved Application State/com.toolbit.app.savedState",
   ]
 end

@@ -280,7 +280,7 @@ class UpdateManager: ObservableObject {
         // 显示安装说明
         let alert = NSAlert()
         alert.messageText = "安装更新"
-        alert.informativeText = "DMG 文件已打开。请将新版本的 DevToolbox 拖动到「应用程序」文件夹中替换旧版本，然后重新打开应用。"
+        alert.informativeText = "DMG 文件已打开。请将新版本的 Toolbit 拖动到「应用程序」文件夹中替换旧版本，然后重新打开应用。"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "好的")
         alert.addButton(withTitle: "打开应用程序文件夹")
@@ -298,7 +298,7 @@ class UpdateManager: ObservableObject {
     
     private func installFromZip(_ zipPath: URL) {
         let tempDir = FileManager.default.temporaryDirectory
-        let extractDir = tempDir.appendingPathComponent("DevToolbox_Update")
+        let extractDir = tempDir.appendingPathComponent("Toolbit_Update")
         
         do {
             // 清理旧的解压目录
@@ -323,7 +323,7 @@ class UpdateManager: ObservableObject {
             
             // 获取当前应用路径
             let currentAppPath = Bundle.main.bundleURL
-            let applicationsPath = URL(fileURLWithPath: "/Applications/DevToolbox.app")
+            let applicationsPath = URL(fileURLWithPath: "/Applications/Toolbit.app")
             
             // 确定目标路径
             let targetPath: URL

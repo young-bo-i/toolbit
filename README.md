@@ -1,4 +1,4 @@
-# 开发百宝箱 (Toolbit)
+# Toolbit (开发百宝箱)
 
 一款为开发者打造的 macOS 原生工具箱应用，集成多种常用开发工具。
 
@@ -43,7 +43,7 @@ brew install --cask toolbit
 
 1. 前往 [Releases](https://github.com/young-bo-i/toolbit/releases) 页面
 2. 下载最新版本的 `.dmg` 或 `.zip` 文件
-3. 打开 DMG，将 DevToolbox 拖入「应用程序」文件夹
+3. 打开 DMG，将 Toolbit 拖入「应用程序」文件夹
 4. 首次打开需要在「系统设置 → 隐私与安全性」中允许运行
 
 ## 🔄 更新
@@ -59,7 +59,7 @@ brew upgrade --cask toolbit
 
 应用内置自动更新检查功能：
 - 🔔 启动时自动检查更新
-- ⌨️ 菜单栏 → DevToolbox → 检查更新（⇧⌘U）
+- ⌨️ 菜单栏 → Toolbit → 检查更新（⇧⌘U）
 - 📦 发现新版本后支持两种更新方式：
   - **Homebrew 更新**：如果已安装 Homebrew，可直接通过 Homebrew 更新
   - **直接下载**：下载安装包手动更新
@@ -110,10 +110,10 @@ git clone https://github.com/young-bo-i/toolbit.git
 cd toolbit
 
 # 使用 Xcode 打开
-open DevToolbox.xcodeproj
+open Toolbit.xcodeproj
 
 # 或使用命令行构建
-xcodebuild -project DevToolbox.xcodeproj -scheme DevToolbox -configuration Debug build
+xcodebuild -project Toolbit.xcodeproj -scheme Toolbit -configuration Debug build
 ```
 
 ### 发布新版本
@@ -133,4 +133,3 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
-

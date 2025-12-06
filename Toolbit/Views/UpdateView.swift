@@ -13,7 +13,7 @@ struct UpdateView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(.blue)
                 
-                Text("开发百宝箱")
+                Text("Toolbit")
                     .font(.title)
                     .fontWeight(.bold)
                 

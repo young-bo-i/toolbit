@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct DevToolboxApp: App {
+struct ToolbitApp: App {
     @StateObject private var updateManager = UpdateManager.shared
     @State private var showUpdateView = false
     
@@ -32,7 +32,7 @@ struct DevToolboxApp: App {
         .commands {
             // 应用菜单
             CommandGroup(replacing: .appInfo) {
-                Button("关于开发百宝箱") {
+                Button("关于 Toolbit") {
                     showUpdateView = true
                 }
             }
