@@ -345,64 +345,92 @@ class UpdateManager: ObservableObject {
             try? xattrAppProcess.run()
             xattrAppProcess.waitUntilExit()
             
-            // 获取当前应用路径
+            // 获取当前应用路径和 PID
             let currentAppPath = Bundle.main.bundleURL
+            let currentPID = ProcessInfo.processInfo.processIdentifier
             let applicationsPath = URL(fileURLWithPath: "/Applications/Toolbit.app")
             
-            // 确定目标路径
+            // 确定目标路径 - 优先使用当前应用路径
             let targetPath: URL
             if currentAppPath.path.hasPrefix("/Applications") {
                 targetPath = currentAppPath
             } else {
+                // 如果不在 Applications，安装到 Applications
                 targetPath = applicationsPath
             }
             
-            // 创建安装脚本 - 等待当前应用退出后再替换
+            // 创建安装脚本 - 使用 PID 等待当前应用退出
             let scriptPath = tempDir.appendingPathComponent("install_update.sh")
+            let logPath = tempDir.appendingPathComponent("install_update.log")
             let script = """
             #!/bin/bash
-            # 等待当前应用完全退出
-            sleep 1
+            exec > "\(logPath.path)" 2>&1
+            echo "开始安装更新..."
+            echo "当前 PID: \(currentPID)"
+            echo "目标路径: \(targetPath.path)"
+            echo "源路径: \(appURL.path)"
+            
+            # 等待当前应用完全退出（最多等待 10 秒）
+            for i in {1..20}; do
+                if ! kill -0 \(currentPID) 2>/dev/null; then
+                    echo "应用已退出"
+                    break
+                fi
+                echo "等待应用退出... ($i)"
+                sleep 0.5
+            done
+            
+            # 再等待一下确保文件句柄释放
+            sleep 0.5
             
             # 删除旧版本
+            echo "删除旧版本..."
             rm -rf "\(targetPath.path)"
             
             # 复制新版本
+            echo "复制新版本..."
             cp -R "\(appURL.path)" "\(targetPath.path)"
             
-            # 再次移除隔离属性（确保彻底清除）
+            # 移除隔离属性
+            echo "移除隔离属性..."
             xattr -cr "\(targetPath.path)" 2>/dev/null || true
             xattr -d com.apple.quarantine "\(targetPath.path)" 2>/dev/null || true
             
-            # 使用 spctl 标记为已验证（如果可能）
-            spctl --add "\(targetPath.path)" 2>/dev/null || true
-            
             # 启动新版本
-            sleep 0.5
+            echo "启动新版本..."
+            sleep 0.3
             open "\(targetPath.path)"
             
             # 清理临时文件
+            echo "清理临时文件..."
             rm -rf "\(extractDir.path)"
             rm -f "\(zipPath.path)"
+            
+            echo "安装完成！"
+            
+            # 延迟删除脚本自身
+            sleep 2
             rm -f "\(scriptPath.path)"
+            rm -f "\(logPath.path)"
             """
             
             try script.write(to: scriptPath, atomically: true, encoding: .utf8)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath.path)
             
-            // 在后台执行安装脚本
+            // 使用 nohup 在后台执行安装脚本，确保脚本不会因为父进程退出而终止
             let installProcess = Process()
-            installProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
-            installProcess.arguments = [scriptPath.path]
+            installProcess.executableURL = URL(fileURLWithPath: "/usr/bin/nohup")
+            installProcess.arguments = ["/bin/bash", scriptPath.path]
             installProcess.standardOutput = nil
             installProcess.standardError = nil
+            installProcess.currentDirectoryURL = tempDir
             try installProcess.run()
             
             // 显示成功状态，然后退出
             status = .installSuccess
             
-            // 延迟退出，让用户看到成功提示
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // 延迟退出，让用户看到成功提示，同时给脚本时间启动
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 NSApplication.shared.terminate(nil)
             }
             
