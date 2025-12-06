@@ -11,6 +11,10 @@ on:
         required: false
         default: '1.0.0-dev'
 
+# 给 workflow 写权限
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-14  # 使用 Apple Silicon runner
