@@ -76,18 +76,76 @@ jobs:
     
     - name: Create DMG
       run: |
-        # 创建 DMG
-        mkdir -p build/dmg
-        cp -R build/export/Toolbit.app build/dmg/
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        APP_NAME="Toolbit"
+        DMG_TEMP="build/dmg-temp"
+        DMG_BACKGROUND="scripts/dmg-resources/background.png"
         
-        # 创建 Applications 快捷方式
-        ln -s /Applications build/dmg/Applications
+        # 清理并创建临时目录
+        rm -rf "${DMG_TEMP}"
+        mkdir -p "${DMG_TEMP}"
         
-        # 创建 DMG 文件
-        hdiutil create -volname "Toolbit" \
-          -srcfolder build/dmg \
-          -ov -format UDZO \
-          build/Toolbit-${{ steps.get_version.outputs.VERSION }}.dmg
+        # 复制应用和创建快捷方式
+        cp -R build/export/Toolbit.app "${DMG_TEMP}/"
+        ln -s /Applications "${DMG_TEMP}/Applications"
+        
+        # 复制背景图片
+        if [ -f "${DMG_BACKGROUND}" ]; then
+            mkdir -p "${DMG_TEMP}/.background"
+            cp "${DMG_BACKGROUND}" "${DMG_TEMP}/.background/background.png"
+        fi
+        
+        # 计算 DMG 大小
+        APP_SIZE=$(du -sm "${DMG_TEMP}" | cut -f1)
+        DMG_SIZE=$((APP_SIZE + 20))
+        
+        # 创建临时可写 DMG
+        hdiutil create -srcfolder "${DMG_TEMP}" \
+            -volname "${APP_NAME}" \
+            -fs HFS+ \
+            -fsargs "-c c=64,a=16,e=16" \
+            -format UDRW \
+            -size ${DMG_SIZE}m \
+            "build/${APP_NAME}-temp.dmg"
+        
+        # 挂载 DMG
+        MOUNT_DIR=$(hdiutil attach -readwrite -noverify -noautoopen "build/${APP_NAME}-temp.dmg" | grep "/Volumes/" | sed 's/.*\/Volumes/\/Volumes/')
+        sleep 2
+        
+        # 使用 AppleScript 设置窗口样式
+        osascript << EOF
+        tell application "Finder"
+            tell disk "${APP_NAME}"
+                open
+                set current view of container window to icon view
+                set toolbar visible of container window to false
+                set statusbar visible of container window to false
+                set the bounds of container window to {400, 100, 920, 480}
+                set viewOptions to the icon view options of container window
+                set arrangement of viewOptions to not arranged
+                set icon size of viewOptions to 100
+                set background picture of viewOptions to file ".background:background.png"
+                set position of item "${APP_NAME}.app" of container window to {140, 185}
+                set position of item "Applications" of container window to {380, 185}
+                close
+                open
+                update without registering applications
+                delay 2
+            end tell
+        end tell
+        EOF
+        
+        # 卸载并转换
+        sync
+        hdiutil detach "${MOUNT_DIR}"
+        hdiutil convert "build/${APP_NAME}-temp.dmg" \
+            -format UDZO \
+            -imagekey zlib-level=9 \
+            -o "build/Toolbit-${VERSION}.dmg"
+        
+        # 清理
+        rm -f "build/${APP_NAME}-temp.dmg"
+        rm -rf "${DMG_TEMP}"
     
     - name: Create ZIP
       run: |
