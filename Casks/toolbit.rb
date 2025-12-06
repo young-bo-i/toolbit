@@ -11,7 +11,7 @@
 
 cask "toolbit" do
   version "1.0.0"
-  sha256 "fdb7281e855f664284b849be1770fe1e5474902cc9619a28008341389b355274"  # 由 GitHub Actions 自动更新
+  sha256 "a0e58e1791b029c3ed65e0de45ad1a7c69d495c0de1f895f837b97f92db29e1f"  # 由 GitHub Actions 自动更新
 
   url "https://github.com/young-bo-i/toolbit/releases/download/v#{version}/Toolbit-#{version}.zip",
       verified: "github.com/young-bo-i/toolbit/"
