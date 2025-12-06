@@ -60,18 +60,24 @@ jobs:
           -archivePath build/Toolbit.xcarchive \
           archive \
           CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=YES \
+          CODE_SIGNING_ALLOWED=YES \
           MARKETING_VERSION=${{ steps.get_version.outputs.VERSION }} \
           CURRENT_PROJECT_VERSION=${{ github.run_number }}
     
-    - name: Export application
+    - name: Export and sign application
       run: |
         # 从 archive 中提取 app
         mkdir -p build/export
         cp -R build/Toolbit.xcarchive/Products/Applications/Toolbit.app build/export/
         
-        # 移除签名相关的扩展属性
+        # 使用 ad-hoc 签名（允许在本地运行）
+        codesign --force --deep --sign - build/export/Toolbit.app
+        
+        # 验证签名
+        codesign --verify --verbose build/export/Toolbit.app || true
+        
+        # 移除隔离属性
         xattr -cr build/export/Toolbit.app
     
     - name: Create DMG
@@ -248,7 +254,10 @@ jobs:
           1. 下载 DMG 文件
           2. 双击打开 DMG
           3. 将 Toolbit 拖到 Applications 文件夹
-          4. 首次打开需要在「系统设置 → 隐私与安全性」中允许
+          4. 如果提示"应用已损坏"，请在终端运行：
+             ```bash
+             sudo xattr -cr /Applications/Toolbit.app
+             ```
           
           #### 方式三：应用内更新
           打开 Toolbit → 菜单栏 → 检查更新
