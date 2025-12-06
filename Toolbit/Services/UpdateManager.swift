@@ -315,6 +315,13 @@ class UpdateManager: ObservableObject {
             }
             try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
             
+            // 先移除 ZIP 文件的隔离属性
+            let xattrZipProcess = Process()
+            xattrZipProcess.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            xattrZipProcess.arguments = ["-cr", zipPath.path]
+            try? xattrZipProcess.run()
+            xattrZipProcess.waitUntilExit()
+            
             // 解压 ZIP
             let unzipProcess = Process()
             unzipProcess.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
@@ -330,6 +337,13 @@ class UpdateManager: ObservableObject {
                 status = .error(message: "解压后未找到应用程序")
                 return
             }
+            
+            // 立即移除解压后 app 的隔离属性
+            let xattrAppProcess = Process()
+            xattrAppProcess.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            xattrAppProcess.arguments = ["-cr", appURL.path]
+            try? xattrAppProcess.run()
+            xattrAppProcess.waitUntilExit()
             
             // 获取当前应用路径
             let currentAppPath = Bundle.main.bundleURL
@@ -356,10 +370,15 @@ class UpdateManager: ObservableObject {
             # 复制新版本
             cp -R "\(appURL.path)" "\(targetPath.path)"
             
-            # 移除隔离属性
-            xattr -cr "\(targetPath.path)"
+            # 再次移除隔离属性（确保彻底清除）
+            xattr -cr "\(targetPath.path)" 2>/dev/null || true
+            xattr -d com.apple.quarantine "\(targetPath.path)" 2>/dev/null || true
+            
+            # 使用 spctl 标记为已验证（如果可能）
+            spctl --add "\(targetPath.path)" 2>/dev/null || true
             
             # 启动新版本
+            sleep 0.5
             open "\(targetPath.path)"
             
             # 清理临时文件
