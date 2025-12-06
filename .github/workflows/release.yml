@@ -127,18 +127,34 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # 切换到 main 分支
-        git fetch origin main
-        git checkout main
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        SHA256=${{ steps.checksums.outputs.ZIP_SHA256 }}
         
-        # 复制更新后的 Cask 文件
+        # 保存更新后的 Cask 内容
+        CASK_CONTENT=$(cat Casks/toolbit.rb)
+        
+        # 切换到 main 分支（丢弃本地更改）
+        git fetch origin main
+        git checkout -f main
+        
+        # 重新写入更新后的 Cask 文件
+        echo "$CASK_CONTENT" > Casks/toolbit.rb
+        
+        # 或者直接用 sed 更新
+        sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/toolbit.rb 2>/dev/null || \
+        sed -i "s/version \".*\"/version \"${VERSION}\"/" Casks/toolbit.rb
+        
+        sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Casks/toolbit.rb 2>/dev/null || \
+        sed -i "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Casks/toolbit.rb
+        
+        # 提交更改
         git add Casks/toolbit.rb
         
         # 检查是否有更改
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "chore: update Cask to v${{ steps.get_version.outputs.VERSION }}"
+          git commit -m "chore: update Cask to v${VERSION}"
           git push origin main
         fi
     
