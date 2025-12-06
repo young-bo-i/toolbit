@@ -32,6 +32,21 @@ struct GitHubAsset: Codable {
     }
 }
 
+// MARK: - 更新方式
+enum UpdateMethod: String, CaseIterable {
+    case homebrew = "Homebrew"
+    case directDownload = "直接下载"
+    
+    var description: String {
+        switch self {
+        case .homebrew:
+            return "通过 Homebrew Cask 更新（推荐）"
+        case .directDownload:
+            return "直接下载安装包更新"
+        }
+    }
+}
+
 // MARK: - 更新状态
 enum UpdateStatus: Equatable {
     case idle
@@ -40,11 +55,14 @@ enum UpdateStatus: Equatable {
     case noUpdate
     case downloading(progress: Double)
     case readyToInstall(localPath: URL)
+    case installingViaHomebrew
+    case homebrewSuccess
     case error(message: String)
     
     static func == (lhs: UpdateStatus, rhs: UpdateStatus) -> Bool {
         switch (lhs, rhs) {
-        case (.idle, .idle), (.checking, .checking), (.noUpdate, .noUpdate):
+        case (.idle, .idle), (.checking, .checking), (.noUpdate, .noUpdate),
+             (.installingViaHomebrew, .installingViaHomebrew), (.homebrewSuccess, .homebrewSuccess):
             return true
         case let (.available(v1, _, _), .available(v2, _, _)):
             return v1 == v2
@@ -72,6 +90,9 @@ class UpdateManager: ObservableObject {
     @Published var status: UpdateStatus = .idle
     @Published var lastCheckDate: Date?
     @Published var autoCheckEnabled: Bool = true
+    @Published var preferredUpdateMethod: UpdateMethod = .homebrew
+    @Published var isHomebrewInstalled: Bool = false
+    @Published var isInstalledViaHomebrew: Bool = false
     
     // 当前版本
     var currentVersion: String {
@@ -87,6 +108,43 @@ class UpdateManager: ObservableObject {
     
     private init() {
         loadSettings()
+        checkHomebrewStatus()
+    }
+    
+    // MARK: - 检查 Homebrew 状态
+    private func checkHomebrewStatus() {
+        Task {
+            // 检查 Homebrew 是否安装
+            isHomebrewInstalled = await checkCommandExists("/opt/homebrew/bin/brew") || 
+                                  await checkCommandExists("/usr/local/bin/brew")
+            
+            // 检查是否通过 Homebrew 安装
+            if isHomebrewInstalled {
+                isInstalledViaHomebrew = await checkInstalledViaHomebrew()
+            }
+        }
+    }
+    
+    private func checkCommandExists(_ path: String) async -> Bool {
+        FileManager.default.fileExists(atPath: path)
+    }
+    
+    private func checkInstalledViaHomebrew() async -> Bool {
+        let process = Process()
+        let pipe = Pipe()
+        
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-c", "brew list --cask | grep -q toolbit"]
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            return false
+        }
     }
     
     // MARK: - 检查更新
@@ -312,6 +370,119 @@ class UpdateManager: ObservableObject {
         status = .idle
     }
     
+    // MARK: - Homebrew 更新
+    func updateViaHomebrew() {
+        status = .installingViaHomebrew
+        
+        Task {
+            do {
+                // 先更新 tap
+                let tapResult = await runBrewCommand(["tap", "young-bo-i/toolbit", "https://github.com/young-bo-i/toolbit.git"])
+                if !tapResult.success {
+                    // tap 可能已存在，继续执行
+                    print("Tap result: \(tapResult.output)")
+                }
+                
+                // 更新 Homebrew
+                let updateResult = await runBrewCommand(["update"])
+                print("Update result: \(updateResult.output)")
+                
+                // 升级应用
+                let upgradeResult = await runBrewCommand(["upgrade", "--cask", "toolbit"])
+                
+                if upgradeResult.success {
+                    status = .homebrewSuccess
+                    // 提示用户重启应用
+                    showRestartAlert()
+                } else if upgradeResult.output.contains("already installed") {
+                    status = .noUpdate
+                } else {
+                    status = .error(message: "Homebrew 更新失败: \(upgradeResult.output)")
+                }
+            }
+        }
+    }
+    
+    func installViaHomebrew() {
+        status = .installingViaHomebrew
+        
+        Task {
+            // 添加 tap
+            let tapResult = await runBrewCommand(["tap", "young-bo-i/toolbit", "https://github.com/young-bo-i/toolbit.git"])
+            print("Tap result: \(tapResult.output)")
+            
+            // 安装应用
+            let installResult = await runBrewCommand(["install", "--cask", "toolbit"])
+            
+            if installResult.success {
+                status = .homebrewSuccess
+                showRestartAlert()
+            } else {
+                status = .error(message: "Homebrew 安装失败: \(installResult.output)")
+            }
+        }
+    }
+    
+    private func runBrewCommand(_ arguments: [String]) async -> (success: Bool, output: String) {
+        let process = Process()
+        let pipe = Pipe()
+        
+        // 查找 brew 路径
+        let brewPath = FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew") 
+            ? "/opt/homebrew/bin/brew" 
+            : "/usr/local/bin/brew"
+        
+        process.executableURL = URL(fileURLWithPath: brewPath)
+        process.arguments = arguments
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        // 设置环境变量
+        var env = ProcessInfo.processInfo.environment
+        env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
+        process.environment = env
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            
+            return (process.terminationStatus == 0, output)
+        } catch {
+            return (false, error.localizedDescription)
+        }
+    }
+    
+    private func showRestartAlert() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "更新完成"
+            alert.informativeText = "应用已通过 Homebrew 更新成功。请重新启动应用以使用新版本。"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "立即重启")
+            alert.addButton(withTitle: "稍后重启")
+            
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                self.restartApp()
+            }
+        }
+    }
+    
+    private func restartApp() {
+        let url = URL(fileURLWithPath: Bundle.main.bundlePath)
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
+            DispatchQueue.main.async {
+                NSApplication.shared.terminate(nil)
+            }
+        }
+    }
+    
     // MARK: - 版本比较
     private func isNewerVersion(_ newVersion: String, than currentVersion: String) -> Bool {
         let newComponents = newVersion.split(separator: ".").compactMap { Int($0) }
@@ -340,6 +511,12 @@ class UpdateManager: ObservableObject {
             lastCheckDate = date
         }
         
+        // 加载更新方式偏好
+        if let methodRaw = UserDefaults.standard.string(forKey: "preferredUpdateMethod"),
+           let method = UpdateMethod(rawValue: methodRaw) {
+            preferredUpdateMethod = method
+        }
+        
         // 默认开启自动检查
         if UserDefaults.standard.object(forKey: "autoCheckUpdates") == nil {
             autoCheckEnabled = true
@@ -348,6 +525,7 @@ class UpdateManager: ObservableObject {
     
     private func saveSettings() {
         UserDefaults.standard.set(autoCheckEnabled, forKey: "autoCheckUpdates")
+        UserDefaults.standard.set(preferredUpdateMethod.rawValue, forKey: "preferredUpdateMethod")
         if let date = lastCheckDate {
             UserDefaults.standard.set(date, forKey: "lastUpdateCheck")
         }
@@ -355,6 +533,11 @@ class UpdateManager: ObservableObject {
     
     func setAutoCheck(_ enabled: Bool) {
         autoCheckEnabled = enabled
+        saveSettings()
+    }
+    
+    func setPreferredUpdateMethod(_ method: UpdateMethod) {
+        preferredUpdateMethod = method
         saveSettings()
     }
     

@@ -3,6 +3,7 @@ import SwiftUI
 struct UpdateView: View {
     @ObservedObject var updateManager = UpdateManager.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var showMethodPicker = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -19,6 +20,13 @@ struct UpdateView: View {
                 Text("版本 \(updateManager.currentVersion) (Build \(updateManager.currentBuild))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                
+                // 显示安装方式
+                if updateManager.isInstalledViaHomebrew {
+                    Label("已通过 Homebrew 安装", systemImage: "checkmark.seal.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
             }
             .padding(.top, 20)
             
@@ -36,7 +44,7 @@ struct UpdateView: View {
             settingsSection
         }
         .padding(24)
-        .frame(width: 450, height: 500)
+        .frame(width: 450, height: 550)
         .background(Color(nsColor: .windowBackgroundColor))
     }
     
@@ -131,6 +139,35 @@ struct UpdateView: View {
                     .padding(.horizontal)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+        case .installingViaHomebrew:
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                
+                Text("正在通过 Homebrew 更新...")
+                    .font(.headline)
+                
+                Text("请稍候，这可能需要一些时间")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+        case .homebrewSuccess:
+            VStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                
+                Text("更新成功！")
+                    .font(.headline)
+                
+                Text("请重新启动应用以使用新版本")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -208,13 +245,40 @@ struct UpdateView: View {
             
             switch updateManager.status {
             case .available(_, let downloadUrl, _):
-                Button("下载更新") {
-                    updateManager.downloadUpdate(from: downloadUrl)
+                // 更新方式选择
+                if updateManager.isHomebrewInstalled {
+                    Menu {
+                        Button {
+                            updateManager.updateViaHomebrew()
+                        } label: {
+                            Label("通过 Homebrew 更新", systemImage: "cup.and.saucer.fill")
+                        }
+                        
+                        Button {
+                            updateManager.downloadUpdate(from: downloadUrl)
+                        } label: {
+                            Label("直接下载更新", systemImage: "arrow.down.circle.fill")
+                        }
+                    } label: {
+                        Label("更新", systemImage: "arrow.down.app.fill")
+                    }
+                    .menuStyle(.borderedButton)
+                    .fixedSize()
+                } else {
+                    Button("下载更新") {
+                        updateManager.downloadUpdate(from: downloadUrl)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                
+            case .checking, .downloading, .installingViaHomebrew:
+                EmptyView()
+                
+            case .homebrewSuccess:
+                Button("重启应用") {
+                    restartApp()
                 }
                 .buttonStyle(.borderedProminent)
-                
-            case .checking, .downloading:
-                EmptyView()
                 
             default:
                 Button("检查更新") {
@@ -227,16 +291,64 @@ struct UpdateView: View {
         }
     }
     
+    private func restartApp() {
+        let url = URL(fileURLWithPath: Bundle.main.bundlePath)
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
+            DispatchQueue.main.async {
+                NSApplication.shared.terminate(nil)
+            }
+        }
+    }
+    
     // MARK: - 设置区域
     private var settingsSection: some View {
         VStack(spacing: 8) {
             Divider()
             
-            Toggle("启动时自动检查更新", isOn: Binding(
-                get: { updateManager.autoCheckEnabled },
-                set: { updateManager.setAutoCheck($0) }
-            ))
-            .font(.caption)
+            HStack {
+                Toggle("启动时自动检查更新", isOn: Binding(
+                    get: { updateManager.autoCheckEnabled },
+                    set: { updateManager.setAutoCheck($0) }
+                ))
+                .font(.caption)
+                
+                Spacer()
+                
+                if updateManager.isHomebrewInstalled {
+                    HStack(spacing: 4) {
+                        Image(systemName: "cup.and.saucer.fill")
+                            .foregroundStyle(.brown)
+                        Text("Homebrew 可用")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            // Homebrew 安装提示
+            if !updateManager.isHomebrewInstalled {
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.blue)
+                    Text("推荐使用 Homebrew 安装以获得更好的更新体验")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    Button("了解更多") {
+                        if let url = URL(string: "https://brew.sh") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .font(.caption2)
+                    .buttonStyle(.link)
+                }
+                .padding(.top, 4)
+            }
         }
     }
 }

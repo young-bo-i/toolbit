@@ -5,14 +5,21 @@ on:
     tags:
       - 'v*'  # 当推送 v 开头的 tag 时触发，如 v1.0.0
   workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: false
+        default: '1.0.0-dev'
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14  # 使用 Apple Silicon runner
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -24,6 +31,8 @@ jobs:
       run: |
         if [[ $GITHUB_REF == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/v}
+        elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
         else
           VERSION="1.0.0-dev"
         fi
@@ -32,9 +41,11 @@ jobs:
     
     - name: Update version in project
       run: |
-        # 更新 Info.plist 中的版本号
-        /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.get_version.outputs.VERSION }}" DevToolbox/Info.plist 2>/dev/null || true
-        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" DevToolbox/Info.plist 2>/dev/null || true
+        # 如果 Info.plist 存在，更新版本号
+        if [ -f "DevToolbox/Info.plist" ]; then
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.get_version.outputs.VERSION }}" DevToolbox/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" DevToolbox/Info.plist 2>/dev/null || true
+        fi
     
     - name: Build application
       run: |
@@ -46,7 +57,9 @@ jobs:
           archive \
           CODE_SIGN_IDENTITY="-" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO \
+          MARKETING_VERSION=${{ steps.get_version.outputs.VERSION }} \
+          CURRENT_PROJECT_VERSION=${{ github.run_number }}
     
     - name: Export application
       run: |
@@ -88,6 +101,43 @@ jobs:
         echo "DMG SHA256: $DMG_SHA256"
         echo "ZIP SHA256: $ZIP_SHA256"
     
+    - name: Update Homebrew Cask
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        # 更新 Cask 文件中的版本和 SHA256
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        SHA256=${{ steps.checksums.outputs.ZIP_SHA256 }}
+        
+        # 更新版本号
+        sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/toolbit.rb
+        
+        # 更新 SHA256
+        sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Casks/toolbit.rb
+        
+        echo "Updated Casks/toolbit.rb:"
+        cat Casks/toolbit.rb
+    
+    - name: Commit Cask update
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # 切换到 main 分支
+        git fetch origin main
+        git checkout main
+        
+        # 复制更新后的 Cask 文件
+        git add Casks/toolbit.rb
+        
+        # 检查是否有更改
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: update Cask to v${{ steps.get_version.outputs.VERSION }}"
+          git push origin main
+        fi
+    
     - name: Create Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
@@ -98,26 +148,42 @@ jobs:
         body: |
           ## DevToolbox v${{ steps.get_version.outputs.VERSION }}
           
-          ### 下载
-          - **DMG 安装包**: `DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg`
-          - **ZIP 压缩包**: `DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip`
+          ### 📥 下载
+          | 文件 | 说明 |
+          |------|------|
+          | `DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg` | DMG 安装包（推荐） |
+          | `DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip` | ZIP 压缩包 |
           
-          ### 安装方式
+          ### 🚀 安装方式
           
-          #### 方式一：DMG 安装
+          #### 方式一：Homebrew 安装（推荐）
+          ```bash
+          # 首次安装
+          brew tap young-bo-i/toolbit https://github.com/young-bo-i/toolbit.git
+          brew install --cask toolbit
+          
+          # 更新版本
+          brew upgrade --cask toolbit
+          ```
+          
+          #### 方式二：DMG 安装
           1. 下载 DMG 文件
           2. 双击打开 DMG
           3. 将 DevToolbox 拖到 Applications 文件夹
-          4. 首次打开需要在「系统设置 → 隐私与安全」中允许
+          4. 首次打开需要在「系统设置 → 隐私与安全性」中允许
           
-          #### 方式二：Homebrew 安装
-          ```bash
-          brew install --cask devtoolbox
-          ```
+          #### 方式三：应用内更新
+          打开 DevToolbox → 菜单栏 → 检查更新
           
-          ### 校验和
-          - DMG SHA256: `${{ steps.checksums.outputs.DMG_SHA256 }}`
-          - ZIP SHA256: `${{ steps.checksums.outputs.ZIP_SHA256 }}`
+          ### 🔐 校验和
+          | 文件 | SHA256 |
+          |------|--------|
+          | DMG | `${{ steps.checksums.outputs.DMG_SHA256 }}` |
+          | ZIP | `${{ steps.checksums.outputs.ZIP_SHA256 }}` |
+          
+          ### 📋 更新说明
+          <!-- 请在此处添加更新说明 -->
+          
         draft: false
         prerelease: false
       env:
@@ -131,4 +197,3 @@ jobs:
         path: |
           build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.dmg
           build/DevToolbox-${{ steps.get_version.outputs.VERSION }}.zip
-
