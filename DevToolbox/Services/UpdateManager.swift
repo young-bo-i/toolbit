@@ -115,8 +115,9 @@ class UpdateManager: ObservableObject {
     private func checkHomebrewStatus() {
         Task {
             // 检查 Homebrew 是否安装
-            isHomebrewInstalled = await checkCommandExists("/opt/homebrew/bin/brew") || 
-                                  await checkCommandExists("/usr/local/bin/brew")
+            let homebrewExists = checkCommandExists("/opt/homebrew/bin/brew")
+            let usrLocalBrewExists = checkCommandExists("/usr/local/bin/brew")
+            isHomebrewInstalled = homebrewExists || usrLocalBrewExists
             
             // 检查是否通过 Homebrew 安装
             if isHomebrewInstalled {
@@ -125,7 +126,7 @@ class UpdateManager: ObservableObject {
         }
     }
     
-    private func checkCommandExists(_ path: String) async -> Bool {
+    private func checkCommandExists(_ path: String) -> Bool {
         FileManager.default.fileExists(atPath: path)
     }
     
