@@ -11,7 +11,7 @@
 
 cask "toolbit" do
   version "1.0.0"
-  sha256 "PLACEHOLDER_SHA256"  # 由 GitHub Actions 自动更新
+  sha256 "24dae1ffd71405c7c434031de86e998ecc6e76244b7490379870d037883a6c2d"  # 由 GitHub Actions 自动更新
 
   url "https://github.com/young-bo-i/toolbit/releases/download/v#{version}/DevToolbox-#{version}.zip",
       verified: "github.com/young-bo-i/toolbit/"
