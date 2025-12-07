@@ -8,13 +8,6 @@ enum SQLDialect: String, CaseIterable, Identifiable {
     case sqlite = "SQLite"
     case oracle = "Oracle"
     case sqlserver = "SQL Server"
-    case db2 = "Db2"
-    case mariadb = "MariaDB"
-    case n1ql = "N1QL"
-    case plsql = "PL/SQL"
-    case redshift = "Amazon Redshift"
-    case spark = "Spark SQL"
-    case transactsql = "Transact-SQL"
     
     var id: String { rawValue }
 }
@@ -45,23 +38,151 @@ struct SQLFormatterView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            headerView
+        HStack(spacing: 0) {
+            // 左侧：输入区域
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("输入 SQL")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 8) {
+                        Button(action: pasteInput) {
+                            Image(systemName: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("粘贴")
+                        
+                        Button(action: compressSQL) {
+                            Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("压缩")
+                        
+                        Button(action: { inputText = "" }) {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                
+                Divider()
+                
+                ZStack(alignment: .topLeading) {
+                    CodeEditor(text: $inputText)
+                    
+                    if inputText.isEmpty {
+                        Text("粘贴或输入 SQL 语句...")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(16)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+            .frame(minWidth: 300)
+            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
             
             Divider()
             
-            // 主内容区
-            HStack(spacing: 16) {
-                // 左侧：输入区域
-                inputPanel
+            // 右侧：输出区域
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("格式化结果")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    // 配置选项
+                    HStack(spacing: 12) {
+                        Picker("", selection: $sqlDialect) {
+                            ForEach(SQLDialect.allCases) { dialect in
+                                Text(dialect.rawValue).tag(dialect)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 100)
+                        
+                        Picker("", selection: $indentSpaces) {
+                            Text("2空格").tag(2)
+                            Text("4空格").tag(4)
+                            Text("Tab").tag(-1)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 140)
+                    }
+                    
+                    Divider()
+                        .frame(height: 16)
+                    
+                    HStack(spacing: 8) {
+                        if !outputText.isEmpty {
+                            Text("\(outputText.count)")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        
+                        Button(action: copyOutput) {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(outputText.isEmpty)
+                        .help("复制")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 
-                // 右侧：输出区域
-                outputPanel
+                Divider()
+                
+                ZStack(alignment: .topLeading) {
+                    if outputText.isEmpty {
+                        Text("格式化结果将显示在这里...")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(16)
+                    } else {
+                        ScrollView {
+                            Text(outputText)
+                                .font(.system(.body, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+                // 错误信息
+                if let error = errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.1))
+                }
             }
-            .padding()
+            .frame(minWidth: 300)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -69,7 +190,6 @@ struct SQLFormatterView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             debounceTask?.cancel()
             debounceTask = nil
             inputText = ""
@@ -85,168 +205,6 @@ struct SQLFormatterView: View {
         }
         .onChange(of: sqlDialect) { _, _ in
             formatSQL()
-        }
-    }
-    
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("SQL 格式化")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("格式化和美化 SQL 语句")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            // 配置选项
-            HStack(spacing: 16) {
-                HStack(spacing: 8) {
-                    Text("语言:")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker("", selection: $sqlDialect) {
-                        ForEach(SQLDialect.allCases) { dialect in
-                            Text(dialect.rawValue).tag(dialect)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 140)
-                }
-                
-                HStack(spacing: 8) {
-                    Text("缩进:")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker("", selection: $indentSpaces) {
-                        Text("2 空格").tag(2)
-                        Text("4 空格").tag(4)
-                        Text("Tab").tag(-1)
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 100)
-                }
-            }
-            
-            Button(action: clearAll) {
-                Label("清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(inputText.isEmpty)
-        }
-        .padding()
-    }
-    
-    // MARK: - 输入面板
-    private var inputPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("输入 SQL")
-                    .font(.headline)
-                Spacer()
-                
-                HStack(spacing: 8) {
-                    Button(action: pasteInput) {
-                        Label("粘贴", systemImage: "doc.on.clipboard")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    
-                    if !inputText.isEmpty {
-                        Button(action: compressSQL) {
-                            Label("压缩", systemImage: "arrow.down.right.and.arrow.up.left")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: { inputText = "" }) {
-                            Label("清空", systemImage: "xmark")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-            }
-            
-            ZStack(alignment: .topLeading) {
-                CodeEditor(text: $inputText)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
-                
-                if inputText.isEmpty {
-                    Text("粘贴或输入 SQL 语句...")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .padding(16)
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-    
-    // MARK: - 输出面板
-    private var outputPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("格式化结果")
-                    .font(.headline)
-                Spacer()
-                
-                if !outputText.isEmpty {
-                    Text("\(outputText.count) 字符")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    Button(action: copyOutput) {
-                        Label("复制", systemImage: "doc.on.doc")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
-                if outputText.isEmpty {
-                    Text("格式化结果将显示在这里...")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .padding(16)
-                } else {
-                    ScrollView {
-                        Text(outputText)
-                            .font(.system(.body, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // 错误信息
-            if let error = errorMessage {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                .padding(8)
-                .background {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.orange.opacity(0.1))
-                }
-            }
         }
     }
     
@@ -375,12 +333,6 @@ struct SQLFormatterView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(outputText, forType: .string)
-    }
-    
-    private func clearAll() {
-        inputText = ""
-        outputText = ""
-        errorMessage = nil
     }
 }
 

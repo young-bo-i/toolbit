@@ -14,38 +14,81 @@ struct EscapeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 标题栏
-            headerView
+            // 输入区域
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("输入文本")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    if !inputText.isEmpty {
+                        Text("\(inputText.count) 字符")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Button(action: pasteInput) {
+                            Image(systemName: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("粘贴")
+                        
+                        Button(action: { inputText = "" }) {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                
+                Divider()
+                
+                ZStack(alignment: .topLeading) {
+                    CodeEditor(text: $inputText)
+                        .frame(height: 150)
+                    
+                    if inputText.isEmpty {
+                        Text("输入需要转义或反转义的文本...")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(16)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
             
             Divider()
             
-            // 主内容区
-            VStack(spacing: 16) {
-                // 输入区域
-                inputSection
+            // 结果区域
+            HStack(spacing: 0) {
+                // 转义结果
+                resultSection(
+                    title: "转义结果",
+                    text: escapedText,
+                    error: escapeError,
+                    copyAction: { copyToClipboard(escapedText) }
+                )
                 
-                // 结果区域
-                HStack(spacing: 16) {
-                    // 转义结果
-                    resultSection(
-                        title: "转义结果",
-                        text: escapedText,
-                        error: escapeError,
-                        copyAction: { copyToClipboard(escapedText) }
-                    )
-                    
-                    // 反转义结果
-                    resultSection(
-                        title: "反转义结果",
-                        text: unescapedText,
-                        error: unescapeError,
-                        copyAction: { copyToClipboard(unescapedText) }
-                    )
-                }
+                Divider()
+                
+                // 反转义结果
+                resultSection(
+                    title: "反转义结果",
+                    text: unescapedText,
+                    error: unescapeError,
+                    copyAction: { copyToClipboard(unescapedText) }
+                )
             }
-            .padding()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -53,7 +96,6 @@ struct EscapeView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             debounceTask?.cancel()
             debounceTask = nil
             inputText = ""
@@ -68,102 +110,36 @@ struct EscapeView: View {
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("转义/反转义")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("对特殊字符进行转义和反转义处理")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Button(action: clearAll) {
-                Label("清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(inputText.isEmpty)
-        }
-        .padding()
-    }
-    
-    // MARK: - 输入区域
-    private var inputSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("输入文本")
-                    .font(.headline)
-                Spacer()
-                
-                if !inputText.isEmpty {
-                    Text("\(inputText.count) 字符")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Button(action: pasteInput) {
-                    Label("粘贴", systemImage: "doc.on.clipboard")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                
-                if !inputText.isEmpty {
-                    Button(action: { inputText = "" }) {
-                        Label("清空", systemImage: "xmark")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            
-            ZStack(alignment: .topLeading) {
-                CodeEditor(text: $inputText)
-                    .frame(height: 150)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
-                
-                if inputText.isEmpty {
-                    Text("输入需要转义或反转义的文本...")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .padding(16)
-                        .allowsHitTesting(false)
-                }
-            }
-        }
-    }
-    
     // MARK: - 结果区域
     private func resultSection(title: String, text: String, error: String?, copyAction: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(title)
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                
                 Spacer()
                 
                 if !text.isEmpty {
-                    Text("\(text.count) 字符")
+                    Text("\(text.count)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                     
                     Button(action: copyAction) {
-                        Label("复制", systemImage: "doc.on.doc")
+                        Image(systemName: "doc.on.doc")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help("复制")
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            
+            Divider()
             
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
                 if let error = error {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -190,6 +166,7 @@ struct EscapeView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
     }
     
     // MARK: - 操作方法
@@ -279,14 +256,6 @@ struct EscapeView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-    }
-    
-    private func clearAll() {
-        inputText = ""
-        escapedText = ""
-        unescapedText = ""
-        escapeError = nil
-        unescapeError = nil
     }
 }
 

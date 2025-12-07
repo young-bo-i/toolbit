@@ -13,40 +13,86 @@ struct URLCoderView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 标题栏
-            headerView
+            // 输入区
+            VStack(alignment: .leading, spacing: 0) {
+                // 标题栏
+                HStack {
+                    Text("输入文本")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    if !inputText.isEmpty {
+                        Text("\(inputText.count) 字符")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Button(action: pasteFromClipboard) {
+                            Image(systemName: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("粘贴")
+                        
+                        Button(action: { inputText = "" }) {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                
+                Divider()
+                
+                TextEditor(text: $inputText)
+                    .font(.system(.body, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .autocorrectionDisabled(true)
+                    .padding(12)
+                    .frame(height: 120)
+                    .overlay {
+                        if inputText.isEmpty {
+                            Text("输入普通文本或 URL 进行编码，或输入已编码的 URL 进行解码...")
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                                .padding(16)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                .allowsHitTesting(false)
+                        }
+                    }
+            }
+            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
             
             Divider()
             
-            // 主内容区
-            VStack(spacing: 16) {
-                // 输入框
-                inputPanel
+            // 结果区域
+            HStack(spacing: 0) {
+                // 编码结果
+                resultPanel(
+                    title: "URL 编码结果",
+                    content: encodedResult,
+                    error: nil,
+                    onCopy: { copyToClipboard(encodedResult) }
+                )
                 
-                // 结果区域
-                HStack(spacing: 16) {
-                    // 编码结果
-                    resultPanel(
-                        title: "URL 编码结果",
-                        content: encodedResult,
-                        placeholder: "输入文本后自动显示 URL 编码结果...",
-                        error: nil,
-                        onCopy: { copyToClipboard(encodedResult) }
-                    )
-                    
-                    // 解码结果
-                    resultPanel(
-                        title: "URL 解码结果",
-                        content: decodedResult,
-                        placeholder: "输入 URL 编码后自动显示解码结果...",
-                        error: decodeError,
-                        onCopy: { copyToClipboard(decodedResult) }
-                    )
-                }
+                Divider()
+                
+                // 解码结果
+                resultPanel(
+                    title: "URL 解码结果",
+                    content: decodedResult,
+                    error: decodeError,
+                    onCopy: { copyToClipboard(decodedResult) }
+                )
             }
-            .padding()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -54,7 +100,6 @@ struct URLCoderView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             debounceTask?.cancel()
             debounceTask = nil
             inputText = ""
@@ -68,112 +113,41 @@ struct URLCoderView: View {
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("URL 编解码")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("输入文本自动进行 URL 编码和解码（百分号编码）")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Button(action: clearAll) {
-                Label("清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(inputText.isEmpty)
-        }
-        .padding()
-    }
-    
-    // MARK: - 输入面板
-    private var inputPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("输入文本")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Text("\(inputText.count) 字符")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Button(action: pasteFromClipboard) {
-                    Label("粘贴", systemImage: "doc.on.clipboard")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                
-                if !inputText.isEmpty {
-                    Button(action: { inputText = "" }) {
-                        Label("清空", systemImage: "xmark")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            
-            TextEditor(text: $inputText)
-                .font(.system(.body, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .autocorrectionDisabled(true)
-                .padding(12)
-                .frame(height: 120)
-                .background {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                }
-                .overlay {
-                    if inputText.isEmpty {
-                        Text("输入普通文本或 URL 进行编码，或输入已编码的 URL 进行解码...")
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.tertiary)
-                            .padding(16)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            .allowsHitTesting(false)
-                    }
-                }
-        }
-    }
-    
     // MARK: - 结果面板
     private func resultPanel(
         title: String,
         content: String,
-        placeholder: String,
         error: String?,
         onCopy: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(title)
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
                 if !content.isEmpty {
-                    Text("\(content.count) 字符")
+                    Text("\(content.count)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                     
                     Button(action: onCopy) {
-                        Label("复制", systemImage: "doc.on.doc")
+                        Image(systemName: "doc.on.doc")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help("复制")
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            
+            Divider()
             
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
                 if let error = error {
                     VStack(spacing: 12) {
                         Image(systemName: "exclamationmark.triangle")
@@ -186,7 +160,7 @@ struct URLCoderView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if content.isEmpty {
-                    Text(placeholder)
+                    Text("结果将显示在这里...")
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
                         .padding(16)
@@ -202,6 +176,7 @@ struct URLCoderView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
     }
     
     // MARK: - 操作方法
@@ -282,17 +257,9 @@ struct URLCoderView: View {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
     }
-    
-    private func clearAll() {
-        inputText = ""
-        encodedResult = ""
-        decodedResult = ""
-        decodeError = nil
-    }
 }
 
 #Preview {
     URLCoderView()
         .frame(width: 900, height: 600)
 }
-

@@ -9,112 +9,118 @@ struct CharacterCountView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("字符统计")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    Text("统计文本中的字符、单词、行数等信息")
+        HStack(spacing: 0) {
+            // 左侧：文本输入区
+            VStack(alignment: .leading, spacing: 0) {
+                // 输入区标题栏
+                HStack {
+                    Text("输入文本")
                         .font(.subheadline)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    // 操作按钮
+                    HStack(spacing: 8) {
+                        Button(action: pasteText) {
+                            Image(systemName: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("粘贴")
+                        
+                        Button(action: { inputText = "" }) {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
+                    }
+                    .foregroundStyle(.secondary)
                 }
-                Spacer()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 
-                // 清空按钮
-                Button(action: { inputText = "" }) {
-                    Label("清空", systemImage: "trash")
-                }
-                .buttonStyle(.bordered)
-                .disabled(inputText.isEmpty)
+                Divider()
+                
+                // 文本输入
+                TextEditor(text: $inputText)
+                    .font(.system(.body, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .autocorrectionDisabled(true)
+                    .padding(12)
+                    .overlay {
+                        if inputText.isEmpty {
+                            Text("在此输入或粘贴文本...")
+                                .foregroundStyle(.tertiary)
+                                .allowsHitTesting(false)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                .padding(16)
+                        }
+                    }
             }
-            .padding()
+            .frame(minWidth: 300)
+            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
             
             Divider()
             
-            // 主内容区
-            HStack(spacing: 20) {
-                // 左侧：文本输入区
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("输入文本")
-                        .font(.headline)
-                    
-                    TextEditor(text: $inputText)
-                        .font(.system(.body, design: .monospaced))
-                        .scrollContentBackground(.hidden)
-                        .autocorrectionDisabled(true)
-                        .padding(12)
-                        .background {
-                            GlassBackground()
-                        }
-                        .overlay {
-                            if inputText.isEmpty {
-                                Text("在此输入或粘贴文本...")
-                                    .foregroundStyle(.tertiary)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                }
-                .frame(minWidth: 300)
-                
-                // 右侧：统计结果
-                VStack(alignment: .leading, spacing: 12) {
+            // 右侧：统计结果
+            VStack(alignment: .leading, spacing: 0) {
+                // 结果标题栏
+                HStack {
                     Text("统计结果")
-                        .font(.headline)
-                    
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            StatCardRow(items: [
-                                StatItem(title: "字符数", value: "\(stats.characterCount)", icon: "character", color: .blue),
-                                StatItem(title: "字符数(不含空格)", value: "\(stats.characterCountNoSpaces)", icon: "character.cursor.ibeam", color: .cyan)
-                            ])
-                            
-                            StatCardRow(items: [
-                                StatItem(title: "单词数", value: "\(stats.wordCount)", icon: "text.word.spacing", color: .green),
-                                StatItem(title: "中文字数", value: "\(stats.chineseCharacterCount)", icon: "character.book.closed.fill.zh", color: .orange)
-                            ])
-                            
-                            StatCardRow(items: [
-                                StatItem(title: "行数", value: "\(stats.lineCount)", icon: "text.line.first.and.arrowtriangle.forward", color: .purple),
-                                StatItem(title: "段落数", value: "\(stats.paragraphCount)", icon: "paragraphsign", color: .pink)
-                            ])
-                            
-                            StatCardRow(items: [
-                                StatItem(title: "句子数", value: "\(stats.sentenceCount)", icon: "text.bubble", color: .indigo),
-                                StatItem(title: "数字个数", value: "\(stats.digitCount)", icon: "number", color: .mint)
-                            ])
-                            
-                            StatCardRow(items: [
-                                StatItem(title: "字节数(UTF-8)", value: "\(stats.byteCountUTF8)", icon: "memorychip", color: .red),
-                                StatItem(title: "字节数(UTF-16)", value: "\(stats.byteCountUTF16)", icon: "memorychip.fill", color: .teal)
-                            ])
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background {
-                        GlassBackground()
-                    }
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    Spacer()
                 }
-                .frame(minWidth: 300)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                
+                Divider()
+                
+                // 统计卡片
+                ScrollView {
+                    VStack(spacing: 12) {
+                        StatCardRow(items: [
+                            StatItem(title: "字符数", value: "\(stats.characterCount)", icon: "character", color: .blue),
+                            StatItem(title: "字符数(不含空格)", value: "\(stats.characterCountNoSpaces)", icon: "character.cursor.ibeam", color: .cyan)
+                        ])
+                        
+                        StatCardRow(items: [
+                            StatItem(title: "单词数", value: "\(stats.wordCount)", icon: "text.word.spacing", color: .green),
+                            StatItem(title: "中文字数", value: "\(stats.chineseCharacterCount)", icon: "character.book.closed.fill.zh", color: .orange)
+                        ])
+                        
+                        StatCardRow(items: [
+                            StatItem(title: "行数", value: "\(stats.lineCount)", icon: "text.line.first.and.arrowtriangle.forward", color: .purple),
+                            StatItem(title: "段落数", value: "\(stats.paragraphCount)", icon: "paragraphsign", color: .pink)
+                        ])
+                        
+                        StatCardRow(items: [
+                            StatItem(title: "句子数", value: "\(stats.sentenceCount)", icon: "text.bubble", color: .indigo),
+                            StatItem(title: "数字个数", value: "\(stats.digitCount)", icon: "number", color: .mint)
+                        ])
+                        
+                        StatCardRow(items: [
+                            StatItem(title: "字节数(UTF-8)", value: "\(stats.byteCountUTF8)", icon: "memorychip", color: .red),
+                            StatItem(title: "字节数(UTF-16)", value: "\(stats.byteCountUTF16)", icon: "memorychip.fill", color: .teal)
+                        ])
+                    }
+                    .padding(16)
+                }
             }
-            .padding()
-        }
-        .background {
-            // 背景渐变
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .controlBackgroundColor),
-                    Color(nsColor: .windowBackgroundColor)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            .frame(minWidth: 350)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
         }
         .onDisappear {
-            // 切换页面时清空状态，避免内存占用
             inputText = ""
+        }
+    }
+    
+    private func pasteText() {
+        if let string = NSPasteboard.general.string(forType: .string) {
+            inputText = string
         }
     }
 }
@@ -257,4 +263,3 @@ struct GlassBackground: View {
     CharacterCountView()
         .frame(width: 800, height: 600)
 }
-
