@@ -52,6 +52,17 @@ struct EscapeView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            inputText = ""
+            escapedText = ""
+            unescapedText = ""
+            escapeError = nil
+            unescapeError = nil
+            hasInitialized = false
+        }
         .onChange(of: inputText) { _, _ in
             triggerDebouncedProcess()
         }

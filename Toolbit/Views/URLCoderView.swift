@@ -53,6 +53,16 @@ struct URLCoderView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            inputText = ""
+            encodedResult = ""
+            decodedResult = ""
+            decodeError = nil
+            hasInitialized = false
+        }
         .onChange(of: inputText) { _, _ in
             triggerDebouncedProcess()
         }

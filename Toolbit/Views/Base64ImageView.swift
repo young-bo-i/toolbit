@@ -48,6 +48,15 @@ struct Base64ImageView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            base64Text = ""
+            currentImage = nil
+            errorMessage = nil
+            hasInitialized = false
+        }
         // 全局粘贴快捷键 ⌘+V
         .onPasteCommand(of: [.image, .png, .jpeg, .gif, .bmp, .fileURL, .plainText]) { providers in
             handlePaste(providers: providers)

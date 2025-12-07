@@ -92,6 +92,14 @@ struct StringDiffView: View {
         .onChange(of: rightText) { _, _ in
             triggerDebouncedDiff()
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            leftText = ""
+            rightText = ""
+            diffResult = []
+        }
     }
     
     // MARK: - 防抖触发对比

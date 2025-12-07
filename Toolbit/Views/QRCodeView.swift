@@ -37,6 +37,16 @@ struct QRCodeView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            inputText = ""
+            qrCodeImage = nil
+            decodedText = ""
+            errorMessage = nil
+            hasInitialized = false
+        }
         .onChange(of: inputText) { _, _ in
             triggerDebouncedEncode()
         }

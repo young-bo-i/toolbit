@@ -97,6 +97,11 @@ func hello() {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            inputText = ""
+            hasInitialized = false
+        }
     }
     
     // MARK: - 标题栏

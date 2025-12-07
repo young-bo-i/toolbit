@@ -112,6 +112,10 @@ struct CharacterCountView: View {
                 endPoint: .bottomTrailing
             )
         }
+        .onDisappear {
+            // 切换页面时清空状态，避免内存占用
+            inputText = ""
+        }
     }
 }
 

@@ -112,3 +112,4 @@ rm -rf "${DMG_TEMP}"
 
 echo "DMG created: ${DMG_PATH}"
 
+

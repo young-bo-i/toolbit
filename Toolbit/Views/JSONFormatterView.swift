@@ -36,6 +36,15 @@ struct JSONFormatterView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            inputText = ""
+            outputText = ""
+            errorMessage = nil
+            hasInitialized = false
+        }
         .onChange(of: inputText) { _, _ in
             triggerDebouncedFormat()
         }

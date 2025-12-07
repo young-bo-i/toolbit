@@ -38,6 +38,13 @@ struct OCRView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            selectedImage = nil
+            recognizedText = ""
+            errorMessage = nil
+            hasInitialized = false
+        }
     }
     
     // MARK: - 标题栏

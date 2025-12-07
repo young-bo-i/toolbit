@@ -37,6 +37,15 @@ struct SVGConverterView: View {
                 checkPasteboardOnAppear()
             }
         }
+        .onDisappear {
+            // 切换页面时清空状态
+            debounceTask?.cancel()
+            debounceTask = nil
+            svgText = ""
+            convertedImage = nil
+            errorMessage = nil
+            hasInitialized = false
+        }
         .onChange(of: svgText) { _, _ in
             triggerDebouncedConvert()
         }
