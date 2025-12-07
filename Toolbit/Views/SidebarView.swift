@@ -14,9 +14,9 @@ struct SidebarView: View {
                             set: { isExpanded in
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     if isExpanded {
-                                        expandedCategories.insert(category)
+                                        _ = expandedCategories.insert(category)
                                     } else {
-                                        expandedCategories.remove(category)
+                                        _ = expandedCategories.remove(category)
                                     }
                                 }
                             }
@@ -37,7 +37,7 @@ struct SidebarView: View {
         .onChange(of: selectedTool) { _, newValue in
             // 确保选中工具所在的分类是展开的
             withAnimation(.easeInOut(duration: 0.2)) {
-                expandedCategories.insert(newValue.category)
+                _ = expandedCategories.insert(newValue.category)
             }
         }
     }
