@@ -2,6 +2,8 @@ import SwiftUI
 
 struct CharacterCountView: View {
     @State private var inputText: String = ""
+    @State private var isHoveringPaste = false
+    @State private var isHoveringClear = false
     
     // 统计数据
     private var stats: TextStats {
@@ -9,109 +11,189 @@ struct CharacterCountView: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 16) {
             // 左侧：文本输入区
             VStack(alignment: .leading, spacing: 0) {
                 // 输入区标题栏
                 HStack {
-                    Text("输入文本")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
+                    Label("输入文本", systemImage: "text.alignleft")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
                     
                     Spacer()
                     
                     // 操作按钮
-                    HStack(spacing: 8) {
-                        Button(action: pasteText) {
-                            Image(systemName: "doc.on.clipboard")
+                    HStack(spacing: 6) {
+                        GlassButton(
+                            icon: "doc.on.clipboard",
+                            label: "粘贴",
+                            isHovering: $isHoveringPaste
+                        ) {
+                            pasteText()
                         }
-                        .buttonStyle(.borderless)
-                        .help("粘贴")
                         
-                        Button(action: { inputText = "" }) {
-                            Image(systemName: "trash")
+                        GlassButton(
+                            icon: "trash",
+                            label: "清空",
+                            isHovering: $isHoveringClear,
+                            isDisabled: inputText.isEmpty
+                        ) {
+                            withAnimation(.spring(response: 0.3)) {
+                                inputText = ""
+                            }
                         }
-                        .buttonStyle(.borderless)
-                        .disabled(inputText.isEmpty)
-                        .help("清空")
                     }
-                    .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                
-                Divider()
+                .padding(.vertical, 12)
                 
                 // 文本输入
-                TextEditor(text: $inputText)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .autocorrectionDisabled(true)
-                    .padding(12)
-                    .overlay {
-                        if inputText.isEmpty {
-                            Text("在此输入或粘贴文本...")
-                                .foregroundStyle(.tertiary)
-                                .allowsHitTesting(false)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                .padding(16)
-                        }
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $inputText)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .autocorrectionDisabled(true)
+                        .padding(12)
+                    
+                    if inputText.isEmpty {
+                        Text("在此输入或粘贴文本进行统计...")
+                            .foregroundStyle(.tertiary)
+                            .padding(16)
+                            .allowsHitTesting(false)
                     }
+                }
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-            .frame(minWidth: 300)
-            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
-            
-            Divider()
+            .frame(minWidth: 320)
+            .background {
+                GlassPanel()
+            }
             
             // 右侧：统计结果
             VStack(alignment: .leading, spacing: 0) {
                 // 结果标题栏
                 HStack {
-                    Text("统计结果")
+                    Label("统计结果", systemImage: "chart.bar.fill")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    
+                    Spacer()
+                    
+                    // 实时字数显示
+                    Text("\(stats.characterCount) 字")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
-                    Spacer()
+                        .foregroundStyle(.blue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background {
+                            Capsule()
+                                .fill(.blue.opacity(0.1))
+                        }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
                 
-                Divider()
-                
-                // 统计卡片
+                // 统计卡片网格
                 ScrollView {
-                    VStack(spacing: 12) {
-                        StatCardRow(items: [
-                            StatItem(title: "字符数", value: "\(stats.characterCount)", icon: "character", color: .blue),
-                            StatItem(title: "字符数(不含空格)", value: "\(stats.characterCountNoSpaces)", icon: "character.cursor.ibeam", color: .cyan)
-                        ])
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ], spacing: 12) {
+                        GlassStatCard(
+                            title: "字符数",
+                            value: stats.characterCount,
+                            icon: "character",
+                            color: .blue
+                        )
                         
-                        StatCardRow(items: [
-                            StatItem(title: "单词数", value: "\(stats.wordCount)", icon: "text.word.spacing", color: .green),
-                            StatItem(title: "中文字数", value: "\(stats.chineseCharacterCount)", icon: "character.book.closed.fill.zh", color: .orange)
-                        ])
+                        GlassStatCard(
+                            title: "不含空格",
+                            value: stats.characterCountNoSpaces,
+                            icon: "character.cursor.ibeam",
+                            color: .cyan
+                        )
                         
-                        StatCardRow(items: [
-                            StatItem(title: "行数", value: "\(stats.lineCount)", icon: "text.line.first.and.arrowtriangle.forward", color: .purple),
-                            StatItem(title: "段落数", value: "\(stats.paragraphCount)", icon: "paragraphsign", color: .pink)
-                        ])
+                        GlassStatCard(
+                            title: "单词数",
+                            value: stats.wordCount,
+                            icon: "text.word.spacing",
+                            color: .green
+                        )
                         
-                        StatCardRow(items: [
-                            StatItem(title: "句子数", value: "\(stats.sentenceCount)", icon: "text.bubble", color: .indigo),
-                            StatItem(title: "数字个数", value: "\(stats.digitCount)", icon: "number", color: .mint)
-                        ])
+                        GlassStatCard(
+                            title: "中文字数",
+                            value: stats.chineseCharacterCount,
+                            icon: "character.book.closed.fill.zh",
+                            color: .orange
+                        )
                         
-                        StatCardRow(items: [
-                            StatItem(title: "字节数(UTF-8)", value: "\(stats.byteCountUTF8)", icon: "memorychip", color: .red),
-                            StatItem(title: "字节数(UTF-16)", value: "\(stats.byteCountUTF16)", icon: "memorychip.fill", color: .teal)
-                        ])
+                        GlassStatCard(
+                            title: "行数",
+                            value: stats.lineCount,
+                            icon: "text.line.first.and.arrowtriangle.forward",
+                            color: .purple
+                        )
+                        
+                        GlassStatCard(
+                            title: "段落数",
+                            value: stats.paragraphCount,
+                            icon: "paragraphsign",
+                            color: .pink
+                        )
+                        
+                        GlassStatCard(
+                            title: "句子数",
+                            value: stats.sentenceCount,
+                            icon: "text.bubble",
+                            color: .indigo
+                        )
+                        
+                        GlassStatCard(
+                            title: "数字个数",
+                            value: stats.digitCount,
+                            icon: "number",
+                            color: .mint
+                        )
+                        
+                        GlassStatCard(
+                            title: "UTF-8 字节",
+                            value: stats.byteCountUTF8,
+                            icon: "memorychip",
+                            color: .red
+                        )
+                        
+                        GlassStatCard(
+                            title: "UTF-16 字节",
+                            value: stats.byteCountUTF16,
+                            icon: "memorychip.fill",
+                            color: .teal
+                        )
                     }
                     .padding(16)
                 }
             }
-            .frame(minWidth: 350)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+            .frame(minWidth: 360)
+            .background {
+                GlassPanel()
+            }
+        }
+        .padding(16)
+        .background {
+            // 渐变背景
+            LinearGradient(
+                colors: [
+                    Color(nsColor: .windowBackgroundColor),
+                    Color(nsColor: .windowBackgroundColor).opacity(0.95)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
         .onDisappear {
             inputText = ""
@@ -120,7 +202,137 @@ struct CharacterCountView: View {
     
     private func pasteText() {
         if let string = NSPasteboard.general.string(forType: .string) {
-            inputText = string
+            withAnimation(.spring(response: 0.3)) {
+                inputText = string
+            }
+        }
+    }
+}
+
+// MARK: - 液态玻璃面板
+struct GlassPanel: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(.ultraThinMaterial)
+            .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.3), .white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            }
+    }
+}
+
+// MARK: - 液态玻璃按钮
+struct GlassButton: View {
+    let icon: String
+    let label: String
+    @Binding var isHovering: Bool
+    var isDisabled: Bool = false
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(isDisabled ? .tertiary : (isHovering ? .primary : .secondary))
+                .frame(width: 28, height: 28)
+                .background {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isHovering && !isDisabled ? .white.opacity(0.15) : .clear)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(.white.opacity(isHovering && !isDisabled ? 0.2 : 0), lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .help(label)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                isHovering = hovering
+            }
+        }
+        .scaleEffect(isHovering && !isDisabled ? 1.05 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
+    }
+}
+
+// MARK: - 液态玻璃统计卡片
+struct GlassStatCard: View {
+    let title: String
+    let value: Int
+    let icon: String
+    let color: Color
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 图标
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [color.opacity(0.2), color.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(color)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Text("\(value)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .fontDesign(.rounded)
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+            }
+            
+            Spacer()
+        }
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: color.opacity(isHovering ? 0.15 : 0.05), radius: isHovering ? 8 : 4, y: 2)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(isHovering ? 0.4 : 0.2),
+                            .white.opacity(isHovering ? 0.2 : 0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        }
+        .scaleEffect(isHovering ? 1.02 : 1.0)
+        .onHover { hovering in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isHovering = hovering
+            }
         }
     }
 }
@@ -181,81 +393,9 @@ struct TextStats {
 extension Character {
     var isChineseCharacter: Bool {
         guard let scalar = unicodeScalars.first else { return false }
-        // CJK统一汉字范围
         return (0x4E00...0x9FFF).contains(scalar.value) ||
                (0x3400...0x4DBF).contains(scalar.value) ||
                (0x20000...0x2A6DF).contains(scalar.value)
-    }
-}
-
-// MARK: - 统计卡片组件
-struct StatItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-}
-
-struct StatCardRow: View {
-    let items: [StatItem]
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            ForEach(items) { item in
-                StatCard(item: item)
-            }
-        }
-    }
-}
-
-struct StatCard: View {
-    let item: StatItem
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // 图标
-            Image(systemName: item.icon)
-                .font(.title2)
-                .foregroundStyle(item.color)
-                .frame(width: 36, height: 36)
-                .background {
-                    Circle()
-                        .fill(item.color.opacity(0.15))
-                }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(item.value)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .fontDesign(.rounded)
-            }
-            
-            Spacer()
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
-        }
-    }
-}
-
-// MARK: - 液态玻璃背景组件
-struct GlassBackground: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(.ultraThinMaterial)
-            .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.white.opacity(0.2), lineWidth: 1)
-            }
     }
 }
 

@@ -205,7 +205,8 @@ struct StringDiffView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
-            GlassBackground()
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.ultraThinMaterial)
                 .padding()
         }
     }
@@ -220,7 +221,8 @@ struct StringDiffView: View {
             .padding()
         }
         .background {
-            GlassBackground()
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.ultraThinMaterial)
                 .padding()
         }
     }
