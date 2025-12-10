@@ -11,6 +11,11 @@
 "menu.hideOthers" = "Hide Others";
 "menu.showAll" = "Show All";
 "menu.quit" = "Quit Toolbit";
+"menu.file" = "File";
+"menu.edit" = "Edit";
+"menu.view" = "View";
+"menu.window" = "Window";
+"menu.help" = "Help";
 
 // MARK: - Settings
 "settings.title" = "Settings";
@@ -23,7 +28,7 @@
 "settings.language" = "Language";
 "settings.languageTitle" = "Language Settings";
 "settings.followSystem" = "Follow System";
-"settings.restartHint" = "Restart app to apply language change";
+"settings.restartHint" = "Some menus require restart to apply";
 
 // MARK: - Languages
 "language.en" = "English";

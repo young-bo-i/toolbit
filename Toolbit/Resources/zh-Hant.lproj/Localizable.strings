@@ -11,6 +11,11 @@
 "menu.hideOthers" = "隱藏其他";
 "menu.showAll" = "顯示全部";
 "menu.quit" = "結束 Toolbit";
+"menu.file" = "檔案";
+"menu.edit" = "編輯";
+"menu.view" = "顯示方式";
+"menu.window" = "視窗";
+"menu.help" = "輔助說明";
 
 // MARK: - Settings
 "settings.title" = "設定";
@@ -23,7 +28,7 @@
 "settings.language" = "語言";
 "settings.languageTitle" = "語言設定";
 "settings.followSystem" = "跟隨系統";
-"settings.restartHint" = "重新啟動應用程式後生效";
+"settings.restartHint" = "部分選單需重新啟動後生效";
 
 // MARK: - Languages
 "language.en" = "English";

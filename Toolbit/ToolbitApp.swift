@@ -3,11 +3,14 @@ import SwiftUI
 @main
 struct ToolbitApp: App {
     @StateObject private var updateManager = UpdateManager.shared
+    @StateObject private var languageManager = LanguageManager.shared
     @State private var showUpdateView = false
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .id(languageManager.refreshID) // 语言切换时刷新整个视图
+                .environment(\.languageRefreshID, languageManager.refreshID)
                 .onAppear {
                     // 启动时自动检查更新
                     if updateManager.autoCheckEnabled {
@@ -52,6 +55,7 @@ struct ToolbitApp: App {
         // 设置窗口
         Settings {
             SettingsView()
+                .id(languageManager.refreshID)
         }
     }
 }
@@ -60,24 +64,22 @@ struct ToolbitApp: App {
 struct SettingsView: View {
     @ObservedObject var updateManager = UpdateManager.shared
     @ObservedObject var languageManager = LanguageManager.shared
-    @State private var showRestartAlert = false
     
     var body: some View {
         Form {
             Section(L10n.settingsLanguageTitle) {
-                Picker(L10n.settingsLanguage, selection: Binding(
-                    get: { languageManager.currentLanguage },
-                    set: { newValue in
-                        languageManager.setLanguage(newValue)
-                        if languageManager.needsRestart {
-                            showRestartAlert = true
-                        }
-                    }
-                )) {
+                Picker(L10n.settingsLanguage, selection: $languageManager.currentLanguage) {
                     ForEach(AppLanguage.allCases) { language in
                         Text(language.displayName).tag(language)
                     }
                 }
+                .onChange(of: languageManager.currentLanguage) { _, _ in
+                    languageManager.setLanguage(languageManager.currentLanguage)
+                }
+                
+                Text(L10n.settingsRestartHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             
             Section(L10n.settingsUpdate) {
@@ -97,11 +99,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 280)
-        .alert(L10n.settingsRestartHint, isPresented: $showRestartAlert) {
-            Button("OK") {
-                showRestartAlert = false
-            }
-        }
+        .frame(width: 400, height: 300)
     }
 }
