@@ -21,7 +21,7 @@ struct SidebarView: View {
                     }
                 } label: {
                     Text(category.displayName)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.headline)
                 }
                 .tint(.secondary)
             }

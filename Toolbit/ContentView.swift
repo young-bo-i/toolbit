@@ -11,43 +11,46 @@ struct ContentView: View {
             SidebarView(selectedTool: $selectedTool)
         } detail: {
             // 主内容区
-            mainContent
+            VStack(alignment: .leading, spacing: 0) {
+                // 标题 - 使用系统大标题字体
+                Text(selectedTool.displayName)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                
+                // 主内容
+                mainContent
+            }
         }
         .toolbar {
-            // 标题
-            ToolbarItem(placement: .navigation) {
-                Text(selectedTool.displayName)
-                    .font(.system(size: 13, weight: .semibold))
+            // 占位，把搜索框推到最右边
+            ToolbarItem(placement: .automatic) {
+                Spacer()
             }
             
-            // 搜索框 - 最右边，只有外层液态玻璃效果
-            ToolbarItem(placement: .primaryAction) {
+            // 搜索框 - 最右边，透明背景
+            ToolbarItem(placement: .automatic) {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                     
-                    ZStack {
-                        // 隐藏 TextField 的默认边框
-                        TextField("搜索...", text: $searchText)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 12))
-                            .focused($isSearchFocused)
-                            .frame(width: 120)
-                    }
+                    TextField("搜索...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .focused($isSearchFocused)
+                        .frame(width: 140)
                     
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
         }
         .frame(minWidth: 1000, minHeight: 650)

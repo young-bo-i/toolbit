@@ -3,7 +3,7 @@ import SwiftUI
 struct CharacterCountView: View {
     @State private var inputText: String = ""
     
-    // 统计数据 - 使用计算属性避免不必要的重算
+    // 统计数据
     private var stats: TextStats {
         TextStats(text: inputText)
     }
@@ -29,7 +29,6 @@ struct CharacterCountView: View {
             HStack {
                 Label("输入文本", systemImage: "text.alignleft")
                     .font(.headline)
-                    .foregroundStyle(.primary)
                 
                 Spacer()
                 
@@ -37,14 +36,12 @@ struct CharacterCountView: View {
                 HStack(spacing: 8) {
                     Button(action: pasteText) {
                         Image(systemName: "doc.on.clipboard")
-                            .font(.system(size: 13))
                     }
                     .buttonStyle(.borderless)
                     .help("粘贴")
                     
                     Button(action: { inputText = "" }) {
                         Image(systemName: "trash")
-                            .font(.system(size: 13))
                     }
                     .buttonStyle(.borderless)
                     .disabled(inputText.isEmpty)
@@ -58,7 +55,7 @@ struct CharacterCountView: View {
             // 文本输入
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $inputText)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.body)
                     .scrollContentBackground(.hidden)
                     .autocorrectionDisabled(true)
                     .padding(12)
@@ -70,19 +67,14 @@ struct CharacterCountView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .background {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(nsColor: .textBackgroundColor).opacity(0.5))
-            }
+            .background(Color(nsColor: .textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
         .frame(minWidth: 320)
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
-        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
     // MARK: - 统计面板
@@ -92,7 +84,6 @@ struct CharacterCountView: View {
             HStack {
                 Label("统计结果", systemImage: "chart.bar.fill")
                     .font(.headline)
-                    .foregroundStyle(.primary)
                 
                 Spacer()
                 
@@ -100,12 +91,12 @@ struct CharacterCountView: View {
                 Text("\(stats.characterCount) 字")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(.blue)
+                    .foregroundColor(.accentColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background {
                         Capsule()
-                            .fill(.blue.opacity(0.1))
+                            .fill(Color.accentColor.opacity(0.1))
                     }
             }
             .padding(.horizontal, 16)
@@ -132,11 +123,8 @@ struct CharacterCountView: View {
             }
         }
         .frame(minWidth: 360)
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
-        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
     private func pasteText() {
@@ -161,10 +149,10 @@ struct StatCard: View {
             ZStack {
                 Circle()
                     .fill(color.opacity(isHovered ? 0.2 : 0.12))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(color)
             }
             
@@ -174,22 +162,17 @@ struct StatCard: View {
                     .foregroundStyle(.secondary)
                 
                 Text("\(value)")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.primary)
+                    .font(.title3)
+                    .fontWeight(.semibold)
             }
             
             Spacer()
         }
-        .padding(14)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.thinMaterial)
-                .shadow(color: color.opacity(isHovered ? 0.12 : 0), radius: 6, y: 2)
-        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(color.opacity(isHovered ? 0.3 : 0), lineWidth: 1)
         }
         .scaleEffect(isHovered ? 1.02 : 1.0)
