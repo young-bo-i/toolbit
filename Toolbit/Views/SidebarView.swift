@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @Binding var selectedTool: ToolType
-    @State private var expandedCategories: Set<ToolCategory> = Set(ToolCategory.allCases)
+    @State private var expandedCategories: Set<ToolCategory> = []
     
     var body: some View {
         List(selection: $selectedTool) {
