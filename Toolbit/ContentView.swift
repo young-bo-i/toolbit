@@ -45,12 +45,9 @@ struct ContentView: View {
         HStack(spacing: 16) {
             // 左侧：标题和描述
             VStack(alignment: .leading, spacing: 2) {
-                Text(selectedTool.rawValue)
+                Text(selectedTool.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
-                Text(selectedTool.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             
             Spacer()

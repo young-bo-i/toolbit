@@ -1,0 +1,215 @@
+/* 
+  Localizable.strings (English)
+  Toolbit
+*/
+
+// MARK: - App Menu
+"menu.about" = "About Toolbit";
+"menu.checkUpdate" = "Check for Updates...";
+"menu.settings" = "Settings...";
+"menu.hide" = "Hide Toolbit";
+"menu.hideOthers" = "Hide Others";
+"menu.showAll" = "Show All";
+"menu.quit" = "Quit Toolbit";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.update" = "Update Settings";
+"settings.autoCheck" = "Check for updates on launch";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.build" = "Build";
+"settings.lastCheck" = "Last checked";
+"settings.language" = "Language";
+"settings.languageTitle" = "Language Settings";
+"settings.followSystem" = "Follow System";
+"settings.restartHint" = "Restart app to apply language change";
+
+// MARK: - Languages
+"language.en" = "English";
+"language.zhHans" = "简体中文";
+"language.zhHant" = "繁體中文";
+
+// MARK: - Sidebar Categories
+"category.textTools" = "Text Tools";
+"category.encoderDecoder" = "Encoder/Decoder";
+"category.formatters" = "Formatters";
+"category.imageTools" = "Image Tools";
+
+// MARK: - Tool Names
+"tool.characterCount" = "Character Count";
+"tool.stringDiff" = "String Diff";
+"tool.escape" = "Escape/Unescape";
+"tool.markdownPreview" = "Markdown Preview";
+"tool.base64Text" = "Base64 Text";
+"tool.urlCoder" = "URL Encode/Decode";
+"tool.qrCode" = "QR Code";
+"tool.svgConverter" = "SVG to Image";
+"tool.base64Image" = "Base64 Image";
+"tool.jsonFormatter" = "JSON";
+"tool.sqlFormatter" = "SQL";
+"tool.xmlFormatter" = "XML";
+"tool.ocr" = "OCR";
+
+// MARK: - Common Actions
+"action.paste" = "Paste";
+"action.copy" = "Copy";
+"action.clear" = "Clear";
+"action.format" = "Format";
+"action.compress" = "Compress";
+"action.encode" = "Encode";
+"action.decode" = "Decode";
+"action.generate" = "Generate";
+"action.recognize" = "Recognize";
+"action.save" = "Save";
+"action.open" = "Open";
+"action.export" = "Export";
+"action.import" = "Import";
+"action.swap" = "Swap";
+"action.compare" = "Compare";
+
+// MARK: - Common Labels
+"label.input" = "Input";
+"label.output" = "Output";
+"label.result" = "Result";
+"label.preview" = "Preview";
+"label.original" = "Original";
+"label.modified" = "Modified";
+"label.left" = "Left";
+"label.right" = "Right";
+
+// MARK: - Character Count
+"charCount.title" = "Character Count";
+"charCount.characters" = "Characters";
+"charCount.charactersNoSpace" = "Characters (no spaces)";
+"charCount.words" = "Words";
+"charCount.lines" = "Lines";
+"charCount.paragraphs" = "Paragraphs";
+"charCount.bytes" = "Bytes";
+
+// MARK: - String Diff
+"stringDiff.title" = "String Diff";
+"stringDiff.original" = "Original Text";
+"stringDiff.modified" = "Modified Text";
+"stringDiff.result" = "Diff Result";
+"stringDiff.added" = "Added";
+"stringDiff.removed" = "Removed";
+"stringDiff.unchanged" = "Unchanged";
+
+// MARK: - Escape
+"escape.title" = "Escape/Unescape";
+"escape.escape" = "Escape";
+"escape.unescape" = "Unescape";
+"escape.type.json" = "JSON";
+"escape.type.html" = "HTML";
+"escape.type.xml" = "XML";
+"escape.type.url" = "URL";
+"escape.type.sql" = "SQL";
+"escape.type.java" = "Java";
+"escape.type.javascript" = "JavaScript";
+
+// MARK: - Markdown Preview
+"markdown.title" = "Markdown Preview";
+"markdown.editor" = "Editor";
+"markdown.preview" = "Preview";
+
+// MARK: - Base64
+"base64.title" = "Base64 Text";
+"base64.encode" = "Encode";
+"base64.decode" = "Decode";
+"base64.inputPlaceholder" = "Enter text to encode/decode...";
+
+// MARK: - URL Coder
+"urlCoder.title" = "URL Encode/Decode";
+"urlCoder.encode" = "Encode";
+"urlCoder.decode" = "Decode";
+"urlCoder.inputPlaceholder" = "Enter URL to encode/decode...";
+
+// MARK: - QR Code
+"qrCode.title" = "QR Code";
+"qrCode.generate" = "Generate";
+"qrCode.recognize" = "Recognize";
+"qrCode.inputPlaceholder" = "Enter text to generate QR code...";
+"qrCode.dropHint" = "Drop image here or click to select";
+"qrCode.saveImage" = "Save Image";
+"qrCode.copyImage" = "Copy Image";
+
+// MARK: - SVG Converter
+"svgConverter.title" = "SVG to Image";
+"svgConverter.inputPlaceholder" = "Paste SVG code here...";
+"svgConverter.scale" = "Scale";
+"svgConverter.export" = "Export PNG";
+
+// MARK: - Base64 Image
+"base64Image.title" = "Base64 Image";
+"base64Image.imageToBase64" = "Image → Base64";
+"base64Image.base64ToImage" = "Base64 → Image";
+"base64Image.dropHint" = "Drop image here or click to select";
+"base64Image.inputPlaceholder" = "Paste Base64 string here...";
+
+// MARK: - JSON Formatter
+"jsonFormatter.title" = "JSON Formatter";
+"jsonFormatter.format" = "Format";
+"jsonFormatter.compress" = "Compress";
+"jsonFormatter.inputPlaceholder" = "Paste JSON here...";
+"jsonFormatter.indentation" = "Indentation";
+"jsonFormatter.spaces2" = "2 Spaces";
+"jsonFormatter.spaces4" = "4 Spaces";
+"jsonFormatter.tab" = "Tab";
+
+// MARK: - SQL Formatter
+"sqlFormatter.title" = "SQL Formatter";
+"sqlFormatter.format" = "Format";
+"sqlFormatter.compress" = "Compress";
+"sqlFormatter.inputPlaceholder" = "Paste SQL here...";
+"sqlFormatter.uppercase" = "Uppercase Keywords";
+
+// MARK: - XML Formatter
+"xmlFormatter.title" = "XML Formatter";
+"xmlFormatter.format" = "Format";
+"xmlFormatter.compress" = "Compress";
+"xmlFormatter.inputPlaceholder" = "Paste XML here...";
+
+// MARK: - OCR
+"ocr.title" = "OCR";
+"ocr.dropHint" = "Drop image here or click to select";
+"ocr.recognize" = "Recognize Text";
+"ocr.copyResult" = "Copy Result";
+"ocr.recognizing" = "Recognizing...";
+"ocr.noText" = "No text recognized";
+
+// MARK: - Update
+"update.title" = "Software Update";
+"update.currentVersion" = "Current Version";
+"update.latestVersion" = "Latest Version";
+"update.checking" = "Checking for updates...";
+"update.available" = "New version available";
+"update.upToDate" = "You're up to date";
+"update.error" = "Check failed";
+"update.download" = "Download Update";
+"update.install" = "Install Update";
+"update.downloading" = "Downloading...";
+"update.installing" = "Installing...";
+"update.installed" = "Update installed! App will restart...";
+"update.releaseNotes" = "Release Notes";
+"update.installedViaBrew" = "Installed via Homebrew";
+"update.brewUpdateHint" = "Please use 'brew upgrade toolbit' to update";
+
+// MARK: - Errors
+"error.invalidInput" = "Invalid input";
+"error.encodeFailed" = "Encode failed";
+"error.decodeFailed" = "Decode failed";
+"error.formatFailed" = "Format failed";
+"error.parseFailed" = "Parse failed";
+"error.saveFailed" = "Save failed";
+"error.loadFailed" = "Load failed";
+"error.networkError" = "Network error";
+"error.unknownError" = "Unknown error";
+
+// MARK: - Messages
+"message.copied" = "Copied to clipboard";
+"message.saved" = "Saved successfully";
+"message.cleared" = "Cleared";
+"message.noContent" = "No content";
+"message.processing" = "Processing...";
+

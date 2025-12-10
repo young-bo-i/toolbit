@@ -29,6 +29,7 @@
 		A1000014238F0002 /* OCRView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000026238F0001 /* OCRView.swift */; };
 		A1000015238F0002 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000027238F0001 /* UpdateManager.swift */; };
 		A1000016238F0002 /* UpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000028238F0001 /* UpdateView.swift */; };
+		A1000017238F0002 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000029238F0001 /* LanguageManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		A1000026238F0001 /* OCRView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRView.swift; sourceTree = "<group>"; };
 		A1000027238F0001 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 		A1000028238F0001 /* UpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateView.swift; sourceTree = "<group>"; };
+		A1000029238F0001 /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000027238F0001 /* UpdateManager.swift */,
+				A1000029238F0001 /* LanguageManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -246,6 +249,7 @@
 				A1000014238F0002 /* OCRView.swift in Sources */,
 				A1000015238F0002 /* UpdateManager.swift in Sources */,
 				A1000016238F0002 /* UpdateView.swift in Sources */,
+				A1000017238F0002 /* LanguageManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

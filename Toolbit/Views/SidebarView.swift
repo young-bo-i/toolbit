@@ -23,7 +23,7 @@ struct SidebarView: View {
                 ) {
                     ForEach(category.tools) { tool in
                         Label {
-                            Text(tool.rawValue)
+                            Text(tool.displayName)
                         } icon: {
                             Image(systemName: tool.icon)
                                 .foregroundStyle(.blue)
@@ -31,7 +31,7 @@ struct SidebarView: View {
                         .tag(tool)
                     }
                 } label: {
-                    Text(category.rawValue)
+                    Text(category.displayName)
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .tint(.secondary)

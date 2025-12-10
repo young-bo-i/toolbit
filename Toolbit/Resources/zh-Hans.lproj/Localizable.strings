@@ -1,0 +1,215 @@
+/* 
+  Localizable.strings (简体中文)
+  Toolbit
+*/
+
+// MARK: - App Menu
+"menu.about" = "关于 Toolbit";
+"menu.checkUpdate" = "检查更新...";
+"menu.settings" = "设置...";
+"menu.hide" = "隐藏 Toolbit";
+"menu.hideOthers" = "隐藏其他";
+"menu.showAll" = "显示全部";
+"menu.quit" = "退出 Toolbit";
+
+// MARK: - Settings
+"settings.title" = "设置";
+"settings.update" = "更新设置";
+"settings.autoCheck" = "启动时自动检查更新";
+"settings.about" = "关于";
+"settings.version" = "版本";
+"settings.build" = "构建号";
+"settings.lastCheck" = "上次检查";
+"settings.language" = "语言";
+"settings.languageTitle" = "语言设置";
+"settings.followSystem" = "跟随系统";
+"settings.restartHint" = "重启应用后生效";
+
+// MARK: - Languages
+"language.en" = "English";
+"language.zhHans" = "简体中文";
+"language.zhHant" = "繁體中文";
+
+// MARK: - Sidebar Categories
+"category.textTools" = "文本工具";
+"category.encoderDecoder" = "编解码器";
+"category.formatters" = "格式化工具";
+"category.imageTools" = "图片工具";
+
+// MARK: - Tool Names
+"tool.characterCount" = "字符统计";
+"tool.stringDiff" = "字符串对比";
+"tool.escape" = "转义/反转义";
+"tool.markdownPreview" = "Markdown预览";
+"tool.base64Text" = "Base64文本";
+"tool.urlCoder" = "URL编解码";
+"tool.qrCode" = "二维码";
+"tool.svgConverter" = "SVG转图片";
+"tool.base64Image" = "Base64图片";
+"tool.jsonFormatter" = "JSON";
+"tool.sqlFormatter" = "SQL";
+"tool.xmlFormatter" = "XML";
+"tool.ocr" = "OCR文字识别";
+
+// MARK: - Common Actions
+"action.paste" = "粘贴";
+"action.copy" = "复制";
+"action.clear" = "清空";
+"action.format" = "格式化";
+"action.compress" = "压缩";
+"action.encode" = "编码";
+"action.decode" = "解码";
+"action.generate" = "生成";
+"action.recognize" = "识别";
+"action.save" = "保存";
+"action.open" = "打开";
+"action.export" = "导出";
+"action.import" = "导入";
+"action.swap" = "交换";
+"action.compare" = "对比";
+
+// MARK: - Common Labels
+"label.input" = "输入";
+"label.output" = "输出";
+"label.result" = "结果";
+"label.preview" = "预览";
+"label.original" = "原始";
+"label.modified" = "修改后";
+"label.left" = "左侧";
+"label.right" = "右侧";
+
+// MARK: - Character Count
+"charCount.title" = "字符统计";
+"charCount.characters" = "字符数";
+"charCount.charactersNoSpace" = "字符数（不含空格）";
+"charCount.words" = "单词数";
+"charCount.lines" = "行数";
+"charCount.paragraphs" = "段落数";
+"charCount.bytes" = "字节数";
+
+// MARK: - String Diff
+"stringDiff.title" = "字符串对比";
+"stringDiff.original" = "原始文本";
+"stringDiff.modified" = "修改文本";
+"stringDiff.result" = "对比结果";
+"stringDiff.added" = "新增";
+"stringDiff.removed" = "删除";
+"stringDiff.unchanged" = "未变";
+
+// MARK: - Escape
+"escape.title" = "转义/反转义";
+"escape.escape" = "转义";
+"escape.unescape" = "反转义";
+"escape.type.json" = "JSON";
+"escape.type.html" = "HTML";
+"escape.type.xml" = "XML";
+"escape.type.url" = "URL";
+"escape.type.sql" = "SQL";
+"escape.type.java" = "Java";
+"escape.type.javascript" = "JavaScript";
+
+// MARK: - Markdown Preview
+"markdown.title" = "Markdown预览";
+"markdown.editor" = "编辑器";
+"markdown.preview" = "预览";
+
+// MARK: - Base64
+"base64.title" = "Base64文本";
+"base64.encode" = "编码";
+"base64.decode" = "解码";
+"base64.inputPlaceholder" = "输入要编码/解码的文本...";
+
+// MARK: - URL Coder
+"urlCoder.title" = "URL编解码";
+"urlCoder.encode" = "编码";
+"urlCoder.decode" = "解码";
+"urlCoder.inputPlaceholder" = "输入要编码/解码的URL...";
+
+// MARK: - QR Code
+"qrCode.title" = "二维码";
+"qrCode.generate" = "生成";
+"qrCode.recognize" = "识别";
+"qrCode.inputPlaceholder" = "输入文本生成二维码...";
+"qrCode.dropHint" = "拖放图片到此处或点击选择";
+"qrCode.saveImage" = "保存图片";
+"qrCode.copyImage" = "复制图片";
+
+// MARK: - SVG Converter
+"svgConverter.title" = "SVG转图片";
+"svgConverter.inputPlaceholder" = "粘贴SVG代码...";
+"svgConverter.scale" = "缩放比例";
+"svgConverter.export" = "导出PNG";
+
+// MARK: - Base64 Image
+"base64Image.title" = "Base64图片";
+"base64Image.imageToBase64" = "图片 → Base64";
+"base64Image.base64ToImage" = "Base64 → 图片";
+"base64Image.dropHint" = "拖放图片到此处或点击选择";
+"base64Image.inputPlaceholder" = "粘贴Base64字符串...";
+
+// MARK: - JSON Formatter
+"jsonFormatter.title" = "JSON格式化";
+"jsonFormatter.format" = "格式化";
+"jsonFormatter.compress" = "压缩";
+"jsonFormatter.inputPlaceholder" = "粘贴JSON内容...";
+"jsonFormatter.indentation" = "缩进";
+"jsonFormatter.spaces2" = "2空格";
+"jsonFormatter.spaces4" = "4空格";
+"jsonFormatter.tab" = "Tab";
+
+// MARK: - SQL Formatter
+"sqlFormatter.title" = "SQL格式化";
+"sqlFormatter.format" = "格式化";
+"sqlFormatter.compress" = "压缩";
+"sqlFormatter.inputPlaceholder" = "粘贴SQL语句...";
+"sqlFormatter.uppercase" = "关键字大写";
+
+// MARK: - XML Formatter
+"xmlFormatter.title" = "XML格式化";
+"xmlFormatter.format" = "格式化";
+"xmlFormatter.compress" = "压缩";
+"xmlFormatter.inputPlaceholder" = "粘贴XML内容...";
+
+// MARK: - OCR
+"ocr.title" = "OCR文字识别";
+"ocr.dropHint" = "拖放图片到此处或点击选择";
+"ocr.recognize" = "识别文字";
+"ocr.copyResult" = "复制结果";
+"ocr.recognizing" = "识别中...";
+"ocr.noText" = "未识别到文字";
+
+// MARK: - Update
+"update.title" = "软件更新";
+"update.currentVersion" = "当前版本";
+"update.latestVersion" = "最新版本";
+"update.checking" = "正在检查更新...";
+"update.available" = "发现新版本";
+"update.upToDate" = "已是最新版本";
+"update.error" = "检查失败";
+"update.download" = "下载更新";
+"update.install" = "安装更新";
+"update.downloading" = "下载中...";
+"update.installing" = "安装中...";
+"update.installed" = "安装成功！应用即将重启...";
+"update.releaseNotes" = "更新日志";
+"update.installedViaBrew" = "通过 Homebrew 安装";
+"update.brewUpdateHint" = "请使用 'brew upgrade toolbit' 命令更新";
+
+// MARK: - Errors
+"error.invalidInput" = "输入无效";
+"error.encodeFailed" = "编码失败";
+"error.decodeFailed" = "解码失败";
+"error.formatFailed" = "格式化失败";
+"error.parseFailed" = "解析失败";
+"error.saveFailed" = "保存失败";
+"error.loadFailed" = "加载失败";
+"error.networkError" = "网络错误";
+"error.unknownError" = "未知错误";
+
+// MARK: - Messages
+"message.copied" = "已复制到剪贴板";
+"message.saved" = "保存成功";
+"message.cleared" = "已清空";
+"message.noContent" = "无内容";
+"message.processing" = "处理中...";
+

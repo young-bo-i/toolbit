@@ -2,12 +2,21 @@ import Foundation
 
 // MARK: - 工具分类
 enum ToolCategory: String, CaseIterable, Identifiable {
-    case textTools = "文本工具"
-    case encoderDecoder = "编解码器"
-    case formatters = "格式化工具"
-    case imageTools = "图片工具"
+    case textTools
+    case encoderDecoder
+    case formatters
+    case imageTools
     
     var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .textTools: return L10n.categoryTextTools
+        case .encoderDecoder: return L10n.categoryEncoderDecoder
+        case .formatters: return L10n.categoryFormatters
+        case .imageTools: return L10n.categoryImageTools
+        }
+    }
     
     var icon: String {
         switch self {
@@ -38,21 +47,39 @@ enum ToolCategory: String, CaseIterable, Identifiable {
 
 // MARK: - 工具类型
 enum ToolType: String, CaseIterable, Identifiable {
-    case characterCount = "字符统计"
-    case stringDiff = "字符串对比"
-    case escape = "转义/反转义"
-    case markdownPreview = "Markdown预览"
-    case base64Text = "Base64文本"
-    case urlCoder = "URL编解码"
-    case qrCode = "二维码"
-    case svgConverter = "SVG转图片"
-    case base64Image = "Base64图片"
-    case jsonFormatter = "JSON"
-    case sqlFormatter = "SQL"
-    case xmlFormatter = "XML"
-    case ocr = "OCR文字识别"
+    case characterCount
+    case stringDiff
+    case escape
+    case markdownPreview
+    case base64Text
+    case urlCoder
+    case qrCode
+    case svgConverter
+    case base64Image
+    case jsonFormatter
+    case sqlFormatter
+    case xmlFormatter
+    case ocr
     
     var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .characterCount: return L10n.toolCharacterCount
+        case .stringDiff: return L10n.toolStringDiff
+        case .escape: return L10n.toolEscape
+        case .markdownPreview: return L10n.toolMarkdownPreview
+        case .base64Text: return L10n.toolBase64Text
+        case .urlCoder: return L10n.toolUrlCoder
+        case .qrCode: return L10n.toolQrCode
+        case .svgConverter: return L10n.toolSvgConverter
+        case .base64Image: return L10n.toolBase64Image
+        case .jsonFormatter: return L10n.toolJsonFormatter
+        case .sqlFormatter: return L10n.toolSqlFormatter
+        case .xmlFormatter: return L10n.toolXmlFormatter
+        case .ocr: return L10n.toolOcr
+        }
+    }
     
     var icon: String {
         switch self {
@@ -82,37 +109,6 @@ enum ToolType: String, CaseIterable, Identifiable {
             return "chevron.left.forwardslash.chevron.right"
         case .ocr:
             return "text.viewfinder"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .characterCount:
-            return "统计文本中的字符、单词、行数等"
-        case .stringDiff:
-            return "对比两段文本的差异"
-        case .escape:
-            return "对特殊字符进行转义和反转义"
-        case .markdownPreview:
-            return "实时预览Markdown文档"
-        case .base64Text:
-            return "文本的Base64编码与解码"
-        case .urlCoder:
-            return "URL百分号编码与解码"
-        case .qrCode:
-            return "生成和识别二维码"
-        case .svgConverter:
-            return "将SVG代码转换为PNG图片"
-        case .base64Image:
-            return "图片与Base64编码互转"
-        case .jsonFormatter:
-            return "格式化和美化JSON数据"
-        case .sqlFormatter:
-            return "格式化和美化SQL语句"
-        case .xmlFormatter:
-            return "格式化和美化XML数据"
-        case .ocr:
-            return "从图片中识别并提取文字"
         }
     }
     

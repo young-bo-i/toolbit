@@ -32,14 +32,14 @@ struct ToolbitApp: App {
         .commands {
             // 应用菜单
             CommandGroup(replacing: .appInfo) {
-                Button("关于 Toolbit") {
+                Button(L10n.menuAbout) {
                     showUpdateView = true
                 }
             }
             
             // 添加检查更新菜单
             CommandGroup(after: .appInfo) {
-                Button("检查更新...") {
+                Button(L10n.menuCheckUpdate) {
                     showUpdateView = true
                     Task {
                         await updateManager.checkForUpdates()
@@ -59,26 +59,49 @@ struct ToolbitApp: App {
 // MARK: - 设置视图
 struct SettingsView: View {
     @ObservedObject var updateManager = UpdateManager.shared
+    @ObservedObject var languageManager = LanguageManager.shared
+    @State private var showRestartAlert = false
     
     var body: some View {
         Form {
-            Section("更新设置") {
-                Toggle("启动时自动检查更新", isOn: Binding(
+            Section(L10n.settingsLanguageTitle) {
+                Picker(L10n.settingsLanguage, selection: Binding(
+                    get: { languageManager.currentLanguage },
+                    set: { newValue in
+                        languageManager.setLanguage(newValue)
+                        if languageManager.needsRestart {
+                            showRestartAlert = true
+                        }
+                    }
+                )) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+            }
+            
+            Section(L10n.settingsUpdate) {
+                Toggle(L10n.settingsAutoCheck, isOn: Binding(
                     get: { updateManager.autoCheckEnabled },
                     set: { updateManager.setAutoCheck($0) }
                 ))
             }
             
-            Section("关于") {
-                LabeledContent("版本", value: updateManager.currentVersion)
-                LabeledContent("构建", value: updateManager.currentBuild)
+            Section(L10n.settingsAbout) {
+                LabeledContent(L10n.settingsVersion, value: updateManager.currentVersion)
+                LabeledContent(L10n.settingsBuild, value: updateManager.currentBuild)
                 
                 if let lastCheck = updateManager.lastCheckDate {
-                    LabeledContent("上次检查更新", value: lastCheck.formatted())
+                    LabeledContent(L10n.settingsLastCheck, value: lastCheck.formatted())
                 }
             }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 200)
+        .frame(width: 400, height: 280)
+        .alert(L10n.settingsRestartHint, isPresented: $showRestartAlert) {
+            Button("OK") {
+                showRestartAlert = false
+            }
+        }
     }
 }
