@@ -14,18 +14,22 @@ struct ContentView: View {
             mainContent
         }
         .toolbar {
-            // 标题放在工具栏左侧 - 纯文本无背景
+            // 标题 - 纯文本
             ToolbarItem(placement: .navigation) {
                 Text(selectedTool.displayName)
                     .font(.system(size: 13, weight: .semibold))
             }
             
-            // 搜索框放在工具栏右侧
-            ToolbarItem(placement: .primaryAction) {
+            // 搜索框 - 最右边，液态玻璃效果
+            ToolbarItem(placement: .automatic) {
+                Spacer()
+            }
+            
+            ToolbarItem(placement: .automatic) {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                     
                     TextField("搜索...", text: $searchText)
                         .textFieldStyle(.plain)
@@ -37,7 +41,7 @@ struct ContentView: View {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -46,11 +50,11 @@ struct ContentView: View {
                 .padding(.vertical, 4)
                 .background {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color(nsColor: .controlBackgroundColor))
-                        )
+                        .fill(.ultraThinMaterial)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
                 }
             }
         }
