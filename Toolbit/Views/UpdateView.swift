@@ -3,15 +3,35 @@ import SwiftUI
 struct UpdateView: View {
     @ObservedObject var updateManager = UpdateManager.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var showMethodPicker = false
     
     var body: some View {
         VStack(spacing: 20) {
+            // 顶部关闭按钮
+            HStack {
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("关闭")
+            }
+            
             // 应用图标和标题
             VStack(spacing: 12) {
-                Image(systemName: "shippingbox.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.blue)
+                // 使用应用图标
+                if let appIcon = NSApplication.shared.applicationIconImage {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                } else {
+                    Image(systemName: "app.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.blue)
+                }
                 
                 Text("Toolbit")
                     .font(.title)
@@ -20,15 +40,7 @@ struct UpdateView: View {
                 Text("版本 \(updateManager.currentVersion) (Build \(updateManager.currentBuild))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                
-                // 显示安装方式
-                if updateManager.isInstalledViaHomebrew {
-                    Label("已通过 Homebrew 安装", systemImage: "checkmark.seal.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
             }
-            .padding(.top, 20)
             
             Divider()
             
@@ -44,7 +56,7 @@ struct UpdateView: View {
             settingsSection
         }
         .padding(24)
-        .frame(width: 450, height: 550)
+        .frame(width: 450, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
     }
     
@@ -145,7 +157,7 @@ struct UpdateView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 
-                Text("正在通过 Homebrew 更新...")
+                Text("正在更新...")
                     .font(.headline)
                 
                 Text("请稍候，这可能需要一些时间")
@@ -274,31 +286,12 @@ struct UpdateView: View {
             
             switch updateManager.status {
             case .available(_, let downloadUrl, _):
-                // 更新方式选择
-                if updateManager.isHomebrewInstalled {
-                    Menu {
-                        Button {
-                            updateManager.updateViaHomebrew()
-                        } label: {
-                            Label("通过 Homebrew 更新", systemImage: "cup.and.saucer.fill")
-                        }
-                        
-                        Button {
-                            updateManager.downloadUpdate(from: downloadUrl)
-                        } label: {
-                            Label("直接下载更新", systemImage: "arrow.down.circle.fill")
-                        }
-                    } label: {
-                        Label("更新", systemImage: "arrow.down.app.fill")
-                    }
-                    .menuStyle(.borderedButton)
-                    .fixedSize()
-                } else {
-                    Button("下载更新") {
-                        updateManager.downloadUpdate(from: downloadUrl)
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button {
+                    updateManager.downloadUpdate(from: downloadUrl)
+                } label: {
+                    Label("下载更新", systemImage: "arrow.down.circle.fill")
                 }
+                .buttonStyle(.borderedProminent)
                 
             case .checking, .downloading, .installingViaHomebrew, .installing, .installSuccess:
                 EmptyView()
@@ -345,38 +338,6 @@ struct UpdateView: View {
                 .font(.caption)
                 
                 Spacer()
-                
-                if updateManager.isHomebrewInstalled {
-                    HStack(spacing: 4) {
-                        Image(systemName: "cup.and.saucer.fill")
-                            .foregroundStyle(.brown)
-                        Text("Homebrew 可用")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            // Homebrew 安装提示
-            if !updateManager.isHomebrewInstalled {
-                HStack {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.blue)
-                    Text("推荐使用 Homebrew 安装以获得更好的更新体验")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Button("了解更多") {
-                        if let url = URL(string: "https://brew.sh") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }
-                    .font(.caption2)
-                    .buttonStyle(.link)
-                }
-                .padding(.top, 4)
             }
         }
     }
@@ -385,4 +346,3 @@ struct UpdateView: View {
 #Preview {
     UpdateView()
 }
-

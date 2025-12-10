@@ -88,17 +88,8 @@ struct SettingsView: View {
                     set: { updateManager.setAutoCheck($0) }
                 ))
             }
-            
-            Section(L10n.settingsAbout) {
-                LabeledContent(L10n.settingsVersion, value: updateManager.currentVersion)
-                LabeledContent(L10n.settingsBuild, value: updateManager.currentBuild)
-                
-                if let lastCheck = updateManager.lastCheckDate {
-                    LabeledContent(L10n.settingsLastCheck, value: lastCheck.formatted())
-                }
-            }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 300)
+        .frame(width: 400, height: 200)
     }
 }
