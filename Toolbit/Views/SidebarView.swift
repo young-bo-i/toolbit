@@ -32,18 +32,15 @@ struct SidebarView: View {
                             .tag(tool)
                         }
                     } label: {
-                        Label {
-                            Text(category.rawValue)
-                                .fontWeight(.medium)
-                        } icon: {
-                            Image(systemName: category.icon)
-                        }
+                        Text(category.rawValue)
+                            .font(.system(size: 13, weight: .semibold))
                     }
                     .tint(.secondary)
                 }
             }
         }
         .listStyle(.sidebar)
+        .environment(\.defaultMinListRowHeight, 28)
         .frame(minWidth: 200, maxWidth: 260)
         .onChange(of: selectedTool) { _, newValue in
             withAnimation(.easeInOut(duration: 0.2)) {
