@@ -39,8 +39,6 @@ struct ToolbitApp: App {
             
             // 添加检查更新菜单
             CommandGroup(after: .appInfo) {
-                Divider()
-                
                 Button("检查更新...") {
                     showUpdateView = true
                     Task {
@@ -48,10 +46,6 @@ struct ToolbitApp: App {
                     }
                 }
                 .keyboardShortcut("U", modifiers: [.command, .shift])
-                
-                Button("访问 GitHub 主页") {
-                    updateManager.openHomePage()
-                }
             }
         }
         
