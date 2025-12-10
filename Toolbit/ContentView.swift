@@ -14,7 +14,7 @@ struct ContentView: View {
             mainContent
         }
         .toolbar {
-            // 标题放在工具栏左侧
+            // 标题放在工具栏左侧 - 纯文本无背景
             ToolbarItem(placement: .navigation) {
                 Text(selectedTool.displayName)
                     .font(.system(size: 13, weight: .semibold))
@@ -42,11 +42,15 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(Color(nsColor: .controlBackgroundColor))
+                        )
                 }
             }
         }
