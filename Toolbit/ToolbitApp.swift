@@ -4,12 +4,12 @@ import SwiftUI
 struct ToolbitApp: App {
     @StateObject private var updateManager = UpdateManager.shared
     @StateObject private var languageManager = LanguageManager.shared
-    @State private var showUpdateView = false
+    @Environment(\.openWindow) private var openWindow
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .id(languageManager.refreshID) // 语言切换时刷新整个视图
+                .id(languageManager.refreshID)
                 .environment(\.languageRefreshID, languageManager.refreshID)
                 .onAppear {
                     // 启动时自动检查更新
@@ -21,13 +21,10 @@ struct ToolbitApp: App {
                             
                             // 如果有新版本，显示更新窗口
                             if case .available = updateManager.status {
-                                showUpdateView = true
+                                openWindow(id: "about")
                             }
                         }
                     }
-                }
-                .sheet(isPresented: $showUpdateView) {
-                    UpdateView()
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -36,14 +33,14 @@ struct ToolbitApp: App {
             // 应用菜单
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.menuAbout) {
-                    showUpdateView = true
+                    openWindow(id: "about")
                 }
             }
             
             // 添加检查更新菜单
             CommandGroup(after: .appInfo) {
                 Button(L10n.menuCheckUpdate) {
-                    showUpdateView = true
+                    openWindow(id: "about")
                     Task {
                         await updateManager.checkForUpdates()
                     }
@@ -57,6 +54,14 @@ struct ToolbitApp: App {
             SettingsView()
                 .id(languageManager.refreshID)
         }
+        
+        // 关于/更新窗口
+        Window(L10n.menuAbout, id: "about") {
+            UpdateView()
+                .id(languageManager.refreshID)
+        }
+        .windowStyle(.titleBar)
+        .windowResizability(.contentSize)
     }
 }
 
