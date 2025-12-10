@@ -13,14 +13,8 @@ struct ContentView: View {
             // 主内容区
             mainContent
         }
+        .navigationTitle(selectedTool.displayName)
         .toolbar {
-            // 标题 - 纯文本，无任何装饰
-            ToolbarItem(placement: .navigation) {
-                Text(selectedTool.displayName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.primary)
-            }
-            
             // 搜索框 - 最右边
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 6) {
@@ -48,7 +42,6 @@ struct ContentView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
         }
-        .toolbarBackground(.hidden, for: .windowToolbar)
         .frame(minWidth: 1000, minHeight: 650)
     }
     
