@@ -7,36 +7,34 @@ struct SidebarView: View {
     var body: some View {
         List(selection: $selectedTool) {
             ForEach(ToolCategory.allCases) { category in
-                Section {
-                    DisclosureGroup(
-                        isExpanded: Binding(
-                            get: { expandedCategories.contains(category) },
-                            set: { isExpanded in
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    if isExpanded {
-                                        _ = expandedCategories.insert(category)
-                                    } else {
-                                        _ = expandedCategories.remove(category)
-                                    }
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { expandedCategories.contains(category) },
+                        set: { isExpanded in
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                if isExpanded {
+                                    _ = expandedCategories.insert(category)
+                                } else {
+                                    _ = expandedCategories.remove(category)
                                 }
                             }
-                        )
-                    ) {
-                        ForEach(category.tools) { tool in
-                            Label {
-                                Text(tool.rawValue)
-                            } icon: {
-                                Image(systemName: tool.icon)
-                                    .foregroundStyle(.blue)
-                            }
-                            .tag(tool)
                         }
-                    } label: {
-                        Text(category.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
+                    )
+                ) {
+                    ForEach(category.tools) { tool in
+                        Label {
+                            Text(tool.rawValue)
+                        } icon: {
+                            Image(systemName: tool.icon)
+                                .foregroundStyle(.blue)
+                        }
+                        .tag(tool)
                     }
-                    .tint(.secondary)
+                } label: {
+                    Text(category.rawValue)
+                        .font(.system(size: 13, weight: .semibold))
                 }
+                .tint(.secondary)
             }
         }
         .listStyle(.sidebar)
