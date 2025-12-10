@@ -11,14 +11,19 @@ struct ContentView: View {
             SidebarView(selectedTool: $selectedTool)
         } detail: {
             // 主内容区
-            VStack(spacing: 0) {
-                // 顶部工具栏
-                topToolbar
-                
-                Divider()
-                
-                // 主视图
-                mainContent
+            mainContent
+        }
+        .toolbar {
+            // 标题放在工具栏左侧
+            ToolbarItem(placement: .navigation) {
+                Text(selectedTool.displayName)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+            }
+            
+            // 搜索框放在工具栏右侧
+            ToolbarItem(placement: .primaryAction) {
+                searchField
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
@@ -38,35 +43,6 @@ struct ContentView: View {
                 return event
             }
         }
-    }
-    
-    // MARK: - 顶部工具栏
-    private var topToolbar: some View {
-        HStack(spacing: 16) {
-            // 左侧：标题和描述
-            VStack(alignment: .leading, spacing: 2) {
-                Text(selectedTool.displayName)
-                    .font(.title2)
-                    .fontWeight(.bold)
-            }
-            
-            Spacer()
-            
-            // 右侧：工具特定按钮 + 搜索框
-            HStack(spacing: 12) {
-                // 工具特定的按钮区域（由各视图提供）
-                toolSpecificButtons
-                
-                Divider()
-                    .frame(height: 24)
-                
-                // 搜索框
-                searchField
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
     }
     
     // MARK: - 搜索框
@@ -97,14 +73,6 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(.quaternary)
         }
-    }
-    
-    // MARK: - 工具特定按钮
-    @ViewBuilder
-    private var toolSpecificButtons: some View {
-        // 这里可以根据 selectedTool 显示不同的按钮
-        // 目前先留空，让各视图自己处理
-        EmptyView()
     }
     
     // MARK: - 主内容
