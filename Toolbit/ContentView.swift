@@ -17,13 +17,37 @@ struct ContentView: View {
             // 标题放在工具栏左侧
             ToolbarItem(placement: .navigation) {
                 Text(selectedTool.displayName)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 13, weight: .semibold))
             }
             
             // 搜索框放在工具栏右侧
             ToolbarItem(placement: .primaryAction) {
-                searchField
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                    
+                    TextField("搜索...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+                        .focused($isSearchFocused)
+                        .frame(width: 100)
+                    
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                }
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
@@ -42,36 +66,6 @@ struct ContentView: View {
                 }
                 return event
             }
-        }
-    }
-    
-    // MARK: - 搜索框
-    private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-            
-            TextField("搜索...", text: $searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .focused($isSearchFocused)
-                .frame(width: 120)
-            
-            if !searchText.isEmpty {
-                Button(action: { searchText = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(.quaternary)
         }
     }
     
