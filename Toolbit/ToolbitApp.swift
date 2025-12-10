@@ -2,12 +2,14 @@ import SwiftUI
 
 @main
 struct ToolbitApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var updateManager = UpdateManager.shared
     @StateObject private var languageManager = LanguageManager.shared
     @Environment(\.openWindow) private var openWindow
     
     var body: some Scene {
-        WindowGroup {
+        // 主窗口 - 单窗口模式
+        Window("Toolbit", id: "main") {
             ContentView()
                 .id(languageManager.refreshID)
                 .environment(\.languageRefreshID, languageManager.refreshID)
@@ -30,6 +32,9 @@ struct ToolbitApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .commands {
+            // 禁用新建窗口
+            CommandGroup(replacing: .newItem) { }
+            
             // 应用菜单
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.menuAbout) {
@@ -62,6 +67,32 @@ struct ToolbitApp: App {
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)
+    }
+}
+
+// MARK: - App Delegate
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // 禁止多窗口
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
+    
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        // 点击 Dock 图标时，如果没有可见窗口，显示主窗口
+        if !flag {
+            for window in sender.windows {
+                if window.identifier?.rawValue == "main" {
+                    window.makeKeyAndOrderFront(nil)
+                    return false
+                }
+            }
+        }
+        return true
+    }
+    
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        // 关闭最后一个窗口时不退出应用
+        return false
     }
 }
 
