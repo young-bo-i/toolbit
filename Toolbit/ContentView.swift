@@ -14,50 +14,41 @@ struct ContentView: View {
             mainContent
         }
         .toolbar {
-            // 标题 - 纯文本
+            // 标题 - 纯文本，无任何装饰
             ToolbarItem(placement: .navigation) {
                 Text(selectedTool.displayName)
                     .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
             }
             
-            // 搜索框 - 最右边，液态玻璃效果
-            ToolbarItem(placement: .automatic) {
-                Spacer()
-            }
-            
-            ToolbarItem(placement: .automatic) {
+            // 搜索框 - 最右边
+            ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                     
                     TextField("搜索...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 12))
                         .focused($isSearchFocused)
-                        .frame(width: 100)
+                        .frame(width: 120)
                     
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                }
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
         }
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .frame(minWidth: 1000, minHeight: 650)
     }
     
