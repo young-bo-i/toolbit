@@ -33,14 +33,14 @@ struct SidebarView: View {
                         }
                     } label: {
                         Text(category.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                     }
                     .tint(.secondary)
                 }
             }
         }
         .listStyle(.sidebar)
-        .environment(\.defaultMinListRowHeight, 28)
+        .environment(\.defaultMinListRowHeight, 24)
         .frame(minWidth: 200, maxWidth: 260)
         .onChange(of: selectedTool) { _, newValue in
             withAnimation(.easeInOut(duration: 0.2)) {
