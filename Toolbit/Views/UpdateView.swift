@@ -5,59 +5,56 @@ struct UpdateView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 20) {
-            // 顶部关闭按钮
-            HStack {
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
+        Form {
+            // 应用信息
+            Section {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        // 使用应用图标
+                        if let appIcon = NSApplication.shared.applicationIconImage {
+                            Image(nsImage: appIcon)
+                                .resizable()
+                                .frame(width: 80, height: 80)
+                        } else {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 64))
+                                .foregroundStyle(.blue)
+                        }
+                        
+                        Text("Toolbit")
+                            .font(.title)
+                            .fontWeight(.bold)
+                        
+                        Text("版本 \(updateManager.currentVersion) (Build \(updateManager.currentBuild))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .help("关闭")
+                .padding(.vertical, 8)
             }
-            
-            // 应用图标和标题
-            VStack(spacing: 12) {
-                // 使用应用图标
-                if let appIcon = NSApplication.shared.applicationIconImage {
-                    Image(nsImage: appIcon)
-                        .resizable()
-                        .frame(width: 80, height: 80)
-                } else {
-                    Image(systemName: "app.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.blue)
-                }
-                
-                Text("Toolbit")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("版本 \(updateManager.currentVersion) (Build \(updateManager.currentBuild))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Divider()
             
             // 更新状态
-            statusView
-            
-            Spacer()
+            Section {
+                statusView
+            }
             
             // 操作按钮
-            actionButtons
+            Section {
+                actionButtons
+            }
             
             // 设置
-            settingsSection
+            Section {
+                Toggle("启动时自动检查更新", isOn: Binding(
+                    get: { updateManager.autoCheckEnabled },
+                    set: { updateManager.setAutoCheck($0) }
+                ))
+            }
         }
-        .padding(24)
-        .frame(width: 450, height: 520)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .formStyle(.grouped)
+        .frame(width: 450, height: 500)
     }
     
     // MARK: - 状态视图
@@ -321,23 +318,6 @@ struct UpdateView: View {
         NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
             DispatchQueue.main.async {
                 NSApplication.shared.terminate(nil)
-            }
-        }
-    }
-    
-    // MARK: - 设置区域
-    private var settingsSection: some View {
-        VStack(spacing: 8) {
-            Divider()
-            
-            HStack {
-                Toggle("启动时自动检查更新", isOn: Binding(
-                    get: { updateManager.autoCheckEnabled },
-                    set: { updateManager.setAutoCheck($0) }
-                ))
-                .font(.caption)
-                
-                Spacer()
             }
         }
     }
