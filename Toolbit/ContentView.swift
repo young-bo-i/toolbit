@@ -51,22 +51,6 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
-        // 全局快捷键 Command+F 聚焦搜索框
-        .onAppear {
-            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "f" {
-                    isSearchFocused = true
-                    return nil
-                }
-                // ESC 清空搜索
-                if event.keyCode == 53 && !searchText.isEmpty {
-                    searchText = ""
-                    isSearchFocused = false
-                    return nil
-                }
-                return event
-            }
-        }
     }
     
     // MARK: - 主内容
@@ -102,7 +86,7 @@ struct ContentView: View {
                 OCRView()
             }
         }
-        .id(selectedTool) // 切换工具时强制重建视图，清空状态
+        .id(selectedTool)
     }
 }
 

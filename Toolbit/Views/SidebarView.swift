@@ -11,12 +11,10 @@ struct SidebarView: View {
                     isExpanded: Binding(
                         get: { expandedCategories.contains(category) },
                         set: { isExpanded in
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                if isExpanded {
-                                    _ = expandedCategories.insert(category)
-                                } else {
-                                    _ = expandedCategories.remove(category)
-                                }
+                            if isExpanded {
+                                expandedCategories.insert(category)
+                            } else {
+                                expandedCategories.remove(category)
                             }
                         }
                     )
@@ -40,9 +38,7 @@ struct SidebarView: View {
         .listStyle(.sidebar)
         .frame(minWidth: 200, maxWidth: 260)
         .onChange(of: selectedTool) { _, newValue in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                _ = expandedCategories.insert(newValue.category)
-            }
+            expandedCategories.insert(newValue.category)
         }
     }
 }

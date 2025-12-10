@@ -2,8 +2,6 @@ import SwiftUI
 
 struct CharacterCountView: View {
     @State private var inputText: String = ""
-    @State private var isHoveringPaste = false
-    @State private var isHoveringClear = false
     
     // 统计数据
     private var stats: TextStats {
@@ -23,26 +21,23 @@ struct CharacterCountView: View {
                     Spacer()
                     
                     // 操作按钮
-                    HStack(spacing: 6) {
-                        GlassButton(
-                            icon: "doc.on.clipboard",
-                            label: "粘贴",
-                            isHovering: $isHoveringPaste
-                        ) {
-                            pasteText()
+                    HStack(spacing: 8) {
+                        Button(action: pasteText) {
+                            Image(systemName: "doc.on.clipboard")
+                                .font(.system(size: 13))
                         }
+                        .buttonStyle(.borderless)
+                        .help("粘贴")
                         
-                        GlassButton(
-                            icon: "trash",
-                            label: "清空",
-                            isHovering: $isHoveringClear,
-                            isDisabled: inputText.isEmpty
-                        ) {
-                            withAnimation(.spring(response: 0.3)) {
-                                inputText = ""
-                            }
+                        Button(action: { inputText = "" }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 13))
                         }
+                        .buttonStyle(.borderless)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
                     }
+                    .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -71,7 +66,8 @@ struct CharacterCountView: View {
             }
             .frame(minWidth: 320)
             .background {
-                GlassPanel()
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.ultraThinMaterial)
             }
             
             // 右侧：统计结果
@@ -105,96 +101,27 @@ struct CharacterCountView: View {
                         GridItem(.flexible(), spacing: 12),
                         GridItem(.flexible(), spacing: 12)
                     ], spacing: 12) {
-                        GlassStatCard(
-                            title: "字符数",
-                            value: stats.characterCount,
-                            icon: "character",
-                            color: .blue
-                        )
-                        
-                        GlassStatCard(
-                            title: "不含空格",
-                            value: stats.characterCountNoSpaces,
-                            icon: "character.cursor.ibeam",
-                            color: .cyan
-                        )
-                        
-                        GlassStatCard(
-                            title: "单词数",
-                            value: stats.wordCount,
-                            icon: "text.word.spacing",
-                            color: .green
-                        )
-                        
-                        GlassStatCard(
-                            title: "中文字数",
-                            value: stats.chineseCharacterCount,
-                            icon: "character.book.closed.fill.zh",
-                            color: .orange
-                        )
-                        
-                        GlassStatCard(
-                            title: "行数",
-                            value: stats.lineCount,
-                            icon: "text.line.first.and.arrowtriangle.forward",
-                            color: .purple
-                        )
-                        
-                        GlassStatCard(
-                            title: "段落数",
-                            value: stats.paragraphCount,
-                            icon: "paragraphsign",
-                            color: .pink
-                        )
-                        
-                        GlassStatCard(
-                            title: "句子数",
-                            value: stats.sentenceCount,
-                            icon: "text.bubble",
-                            color: .indigo
-                        )
-                        
-                        GlassStatCard(
-                            title: "数字个数",
-                            value: stats.digitCount,
-                            icon: "number",
-                            color: .mint
-                        )
-                        
-                        GlassStatCard(
-                            title: "UTF-8 字节",
-                            value: stats.byteCountUTF8,
-                            icon: "memorychip",
-                            color: .red
-                        )
-                        
-                        GlassStatCard(
-                            title: "UTF-16 字节",
-                            value: stats.byteCountUTF16,
-                            icon: "memorychip.fill",
-                            color: .teal
-                        )
+                        StatCard(title: "字符数", value: stats.characterCount, icon: "character", color: .blue)
+                        StatCard(title: "不含空格", value: stats.characterCountNoSpaces, icon: "character.cursor.ibeam", color: .cyan)
+                        StatCard(title: "单词数", value: stats.wordCount, icon: "text.word.spacing", color: .green)
+                        StatCard(title: "中文字数", value: stats.chineseCharacterCount, icon: "character.book.closed.fill.zh", color: .orange)
+                        StatCard(title: "行数", value: stats.lineCount, icon: "text.line.first.and.arrowtriangle.forward", color: .purple)
+                        StatCard(title: "段落数", value: stats.paragraphCount, icon: "paragraphsign", color: .pink)
+                        StatCard(title: "句子数", value: stats.sentenceCount, icon: "text.bubble", color: .indigo)
+                        StatCard(title: "数字个数", value: stats.digitCount, icon: "number", color: .mint)
+                        StatCard(title: "UTF-8 字节", value: stats.byteCountUTF8, icon: "memorychip", color: .red)
+                        StatCard(title: "UTF-16 字节", value: stats.byteCountUTF16, icon: "memorychip.fill", color: .teal)
                     }
                     .padding(16)
                 }
             }
             .frame(minWidth: 360)
             .background {
-                GlassPanel()
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.ultraThinMaterial)
             }
         }
         .padding(16)
-        .background {
-            // 渐变背景
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .windowBackgroundColor),
-                    Color(nsColor: .windowBackgroundColor).opacity(0.95)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
         .onDisappear {
             inputText = ""
         }
@@ -202,90 +129,24 @@ struct CharacterCountView: View {
     
     private func pasteText() {
         if let string = NSPasteboard.general.string(forType: .string) {
-            withAnimation(.spring(response: 0.3)) {
-                inputText = string
-            }
+            inputText = string
         }
     }
 }
 
-// MARK: - 液态玻璃面板
-struct GlassPanel: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(.ultraThinMaterial)
-            .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [.white.opacity(0.3), .white.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            }
-    }
-}
-
-// MARK: - 液态玻璃按钮
-struct GlassButton: View {
-    let icon: String
-    let label: String
-    @Binding var isHovering: Bool
-    var isDisabled: Bool = false
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(isDisabled ? .tertiary : (isHovering ? .primary : .secondary))
-                .frame(width: 28, height: 28)
-                .background {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isHovering && !isDisabled ? .white.opacity(0.15) : .clear)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(.white.opacity(isHovering && !isDisabled ? 0.2 : 0), lineWidth: 1)
-                }
-        }
-        .buttonStyle(.plain)
-        .disabled(isDisabled)
-        .help(label)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
-                isHovering = hovering
-            }
-        }
-        .scaleEffect(isHovering && !isDisabled ? 1.05 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
-    }
-}
-
-// MARK: - 液态玻璃统计卡片
-struct GlassStatCard: View {
+// MARK: - 统计卡片
+struct StatCard: View {
     let title: String
     let value: Int
     let icon: String
     let color: Color
-    
-    @State private var isHovering = false
     
     var body: some View {
         HStack(spacing: 12) {
             // 图标
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [color.opacity(0.2), color.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(color.opacity(0.15))
                     .frame(width: 40, height: 40)
                 
                 Image(systemName: icon)
@@ -303,7 +164,6 @@ struct GlassStatCard: View {
                     .fontWeight(.bold)
                     .fontDesign(.rounded)
                     .foregroundStyle(.primary)
-                    .contentTransition(.numericText())
             }
             
             Spacer()
@@ -312,27 +172,6 @@ struct GlassStatCard: View {
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.ultraThinMaterial)
-                .shadow(color: color.opacity(isHovering ? 0.15 : 0.05), radius: isHovering ? 8 : 4, y: 2)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(isHovering ? 0.4 : 0.2),
-                            .white.opacity(isHovering ? 0.2 : 0.05)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        }
-        .scaleEffect(isHovering ? 1.02 : 1.0)
-        .onHover { hovering in
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                isHovering = hovering
-            }
         }
     }
 }
