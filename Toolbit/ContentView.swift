@@ -13,20 +13,28 @@ struct ContentView: View {
             // 主内容区
             mainContent
         }
-        .navigationTitle(selectedTool.displayName)
         .toolbar {
-            // 搜索框 - 最右边
+            // 标题
+            ToolbarItem(placement: .navigation) {
+                Text(selectedTool.displayName)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            
+            // 搜索框 - 最右边，只有外层液态玻璃效果
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                     
-                    TextField("搜索...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 12))
-                        .focused($isSearchFocused)
-                        .frame(width: 120)
+                    ZStack {
+                        // 隐藏 TextField 的默认边框
+                        TextField("搜索...", text: $searchText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12))
+                            .focused($isSearchFocused)
+                            .frame(width: 120)
+                    }
                     
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
@@ -37,9 +45,9 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial, in: Capsule())
             }
         }
         .frame(minWidth: 1000, minHeight: 650)
