@@ -11,16 +11,8 @@ struct UpdateView: View {
                 HStack {
                     Spacer()
                     VStack(spacing: 12) {
-                        // 使用应用图标
-                        if let appIcon = NSApplication.shared.applicationIconImage {
-                            Image(nsImage: appIcon)
-                                .resizable()
-                                .frame(width: 80, height: 80)
-                        } else {
-                            Image(systemName: "app.fill")
-                                .font(.system(size: 64))
-                                .foregroundStyle(.blue)
-                        }
+                        // 使用 AppLogoView
+                        AppLogoView(size: 80)
                         
                         Text("Toolbit")
                             .font(.title)

@@ -1,9 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedTool: ToolType = .characterCount
-    @State private var searchText: String = ""
-    @FocusState private var isSearchFocused: Bool
+    @State private var selectedTool: ToolType = .home
+    @Environment(\.openWindow) private var openWindow
     
     var body: some View {
         NavigationSplitView {
@@ -11,48 +10,32 @@ struct ContentView: View {
             SidebarView(selectedTool: $selectedTool)
         } detail: {
             // 主内容区
-            VStack(alignment: .leading, spacing: 0) {
-                // 标题 - 使用系统大标题字体
-                Text(selectedTool.displayName)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+            if selectedTool == .home {
+                HomeView(selectedTool: $selectedTool)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    // 标题栏
+                    HStack {
+                        Text(selectedTool.displayName)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Spacer()
+                    }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
                     .padding(.bottom, 16)
-                
-                // 主内容
-                mainContent
-            }
-        }
-        .toolbar {
-            // 占位，把搜索框推到最右边
-            ToolbarItem(placement: .automatic) {
-                Spacer()
-            }
-            
-            // 搜索框 - 最右边，透明背景
-            ToolbarItem(placement: .automatic) {
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
                     
-                    TextField("搜索...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .focused($isSearchFocused)
-                        .frame(width: 140)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    // 主内容
+                    mainContent
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
             }
         }
+        // MARK: - 自定义顶部工具栏（无边框标题 + 有边框按钮）
+        // 使用方法：.customToolbar(title: "标题文案") { /* 按钮点击事件 */ }
+        // .customToolbar(title: "测试文案") {
+        //     openWindow(id: "about")
+        // }
         .frame(minWidth: 1000, minHeight: 650)
     }
     
@@ -61,6 +44,8 @@ struct ContentView: View {
     private var mainContent: some View {
         Group {
             switch selectedTool {
+            case .home:
+                EmptyView()
             case .characterCount:
                 CharacterCountView()
             case .stringDiff:

@@ -12,26 +12,17 @@ struct OCRView: View {
     @State private var recognitionLevel: VNRequestTextRecognitionLevel = .accurate
     @State private var recognitionLanguages: [String] = ["zh-Hans", "zh-Hant", "en-US"]
     
+    @State private var isDropTargeted: Bool = false
+    
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            headerView
+        HStack(spacing: 16) {
+            // 左侧：图片
+            imagePanel
             
-            Divider()
-            
-            // 主内容区
-            HSplitView {
-                // 左侧：图片区域
-                imagePanel
-                    .frame(minWidth: 350)
-                
-                // 右侧：识别结果
-                resultPanel
-                    .frame(minWidth: 350)
-            }
-            .padding()
+            // 右侧：识别结果
+            resultPanel
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -39,7 +30,6 @@ struct OCRView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             selectedImage = nil
             recognizedText = ""
             errorMessage = nil
@@ -47,112 +37,113 @@ struct OCRView: View {
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("OCR 文字识别")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("从图片中识别并提取文字")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            // 识别精度选择
-            HStack(spacing: 8) {
-                Text("精度:")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("", selection: $recognitionLevel) {
-                    Text("快速").tag(VNRequestTextRecognitionLevel.fast)
-                    Text("精确").tag(VNRequestTextRecognitionLevel.accurate)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 120)
-            }
-            
-            Button(action: clearAll) {
-                Label("清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(selectedImage == nil && recognizedText.isEmpty)
-        }
-        .padding()
-    }
-    
     // MARK: - 图片面板
     private var imagePanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
+                Image(systemName: "photo")
+                    .foregroundStyle(.blue)
                 Text("图片")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
-                Button(action: pasteImage) {
-                    Label("粘贴", systemImage: "doc.on.clipboard")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                
-                Button(action: selectImageFile) {
-                    Label("选择", systemImage: "folder")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                
-                if selectedImage != nil {
-                    Button(action: { selectedImage = nil; recognizedText = ""; errorMessage = nil }) {
-                        Label("清空", systemImage: "xmark")
+                // 识别精度
+                HStack(spacing: 4) {
+                    Text("精度")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Picker("", selection: $recognitionLevel) {
+                        Text("快速").tag(VNRequestTextRecognitionLevel.fast)
+                        Text("精确").tag(VNRequestTextRecognitionLevel.accurate)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .pickerStyle(.segmented)
+                    .frame(width: 100)
                 }
+                
+                Divider()
+                    .frame(height: 12)
+                    .padding(.horizontal, 6)
+                
+                HStack(spacing: 4) {
+                    Button(action: pasteImage) {
+                        Image(systemName: "doc.on.clipboard")
+                    }
+                    .help("粘贴图片")
+                    
+                    Button(action: selectImageFile) {
+                        Image(systemName: "folder")
+                    }
+                    .help("选择图片")
+                    
+                    Button(action: { selectedImage = nil; recognizedText = ""; errorMessage = nil }) {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .disabled(selectedImage == nil)
+                    .help("清空")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            // 图片显示/拖放区域
+            // 图片显示区
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                // 透明背景网格
+                CheckerboardBackground()
                 
                 if let image = selectedImage {
                     Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .padding(12)
+                        .padding(24)
                 } else {
-                    VStack(spacing: 16) {
+                    VStack(spacing: 12) {
                         Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.secondary)
-                        Text("拖放图片到这里")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                        Text("或点击「选择」按钮选择图片")
-                            .font(.caption)
+                            .font(.system(size: 40))
                             .foregroundStyle(.tertiary)
-                        Text("支持 PNG、JPG、JPEG、GIF、BMP、TIFF")
-                            .font(.caption2)
+                        
+                        Text("拖放图片到这里")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        
+                        Text("或点击上方按钮选择 / 粘贴图片")
+                            .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 }
                 
+                // 处理中遮罩
                 if isProcessing {
-                    Color.black.opacity(0.3)
-                    ProgressView()
-                        .scaleEffect(1.5)
+                    Color.black.opacity(0.4)
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("正在识别...")
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                    }
+                }
+                
+                // 拖拽高亮
+                if isDropTargeted {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [8]))
+                        .padding(8)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
+            .onDrop(of: [.image, .fileURL], isTargeted: $isDropTargeted) { providers in
                 handleDrop(providers: providers)
                 return true
             }
             
             // 识别按钮
-            if selectedImage != nil && !isProcessing {
+            if selectedImage != nil {
                 Button(action: performOCR) {
                     HStack {
                         Image(systemName: "text.viewfinder")
@@ -162,59 +153,81 @@ struct OCRView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .disabled(isProcessing)
+                .padding(12)
+                .background(Color(nsColor: .windowBackgroundColor))
             }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
         }
     }
     
     // MARK: - 结果面板
     private var resultPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
+                Image(systemName: "text.viewfinder")
+                    .foregroundStyle(.green)
                 Text("识别结果")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
-                if !recognizedText.isEmpty {
-                    Text("\(recognizedText.count) 字符")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
+                Text("\(recognizedText.count) 字符")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
+                
+                Divider()
+                    .frame(height: 12)
+                    .padding(.horizontal, 6)
+                
+                HStack(spacing: 4) {
                     Button(action: copyResult) {
-                        Label("复制", systemImage: "doc.on.doc")
+                        Image(systemName: "doc.on.doc")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .disabled(recognizedText.isEmpty)
+                    .help("复制")
                     
                     Button(action: saveResult) {
-                        Label("保存", systemImage: "square.and.arrow.down")
+                        Image(systemName: "square.and.arrow.down")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .disabled(recognizedText.isEmpty)
+                    .help("保存")
                 }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
+            // 结果显示
+            ScrollView {
                 if let error = errorMessage {
                     VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill")
+                        Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 32))
                             .foregroundStyle(.orange)
                         Text(error)
-                            .font(.body)
-                            .foregroundStyle(.orange)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
+                    .padding(40)
                 } else if recognizedText.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "text.viewfinder")
                             .font(.system(size: 32))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.tertiary)
                         Text("识别结果将显示在这里")
-                            .font(.body)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                         if selectedImage != nil {
                             Text("点击「开始识别」按钮进行 OCR 识别")
@@ -222,18 +235,22 @@ struct OCRView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
+                    .padding(40)
                 } else {
-                    ScrollView {
-                        Text(recognizedText)
-                            .font(.system(.body, design: .default))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
-                    }
+                    Text(recognizedText)
+                        .font(.body)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
         }
     }
     

@@ -47,6 +47,7 @@ enum ToolCategory: String, CaseIterable, Identifiable {
 
 // MARK: - 工具类型
 enum ToolType: String, CaseIterable, Identifiable {
+    case home
     case characterCount
     case stringDiff
     case escape
@@ -63,8 +64,14 @@ enum ToolType: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
+    /// 不包含首页的所有工具
+    static var allTools: [ToolType] {
+        allCases.filter { $0 != .home }
+    }
+    
     var displayName: String {
         switch self {
+        case .home: return "首页"
         case .characterCount: return L10n.toolCharacterCount
         case .stringDiff: return L10n.toolStringDiff
         case .escape: return L10n.toolEscape
@@ -81,8 +88,29 @@ enum ToolType: String, CaseIterable, Identifiable {
         }
     }
     
+    var subtitle: String {
+        switch self {
+        case .home: return ""
+        case .characterCount: return "统计字符、单词、行数"
+        case .stringDiff: return "对比两段文本的差异"
+        case .escape: return "转义和反转义特殊字符"
+        case .markdownPreview: return "实时预览 Markdown"
+        case .base64Text: return "Base64 编码解码"
+        case .urlCoder: return "URL 编码解码"
+        case .qrCode: return "生成和识别二维码"
+        case .svgConverter: return "SVG 转 PNG 图片"
+        case .base64Image: return "图片与 Base64 互转"
+        case .jsonFormatter: return "格式化和压缩 JSON"
+        case .sqlFormatter: return "格式化 SQL 语句"
+        case .xmlFormatter: return "格式化 XML 文档"
+        case .ocr: return "识别图片中的文字"
+        }
+    }
+    
     var icon: String {
         switch self {
+        case .home:
+            return "house.fill"
         case .characterCount:
             return "textformat.123"
         case .stringDiff:
@@ -112,8 +140,29 @@ enum ToolType: String, CaseIterable, Identifiable {
         }
     }
     
+    var color: Color {
+        switch self {
+        case .home: return .blue
+        case .characterCount: return .blue
+        case .stringDiff: return .purple
+        case .escape: return .orange
+        case .markdownPreview: return .pink
+        case .base64Text: return .green
+        case .urlCoder: return .cyan
+        case .qrCode: return .indigo
+        case .svgConverter: return .orange
+        case .base64Image: return .teal
+        case .jsonFormatter: return .yellow
+        case .sqlFormatter: return .purple
+        case .xmlFormatter: return .green
+        case .ocr: return .red
+        }
+    }
+    
     var category: ToolCategory {
         switch self {
+        case .home:
+            return .textTools // 首页不属于任何分类，这里随便给一个
         case .characterCount, .stringDiff, .escape, .markdownPreview:
             return .textTools
         case .base64Text, .urlCoder, .qrCode, .svgConverter, .base64Image:
@@ -125,3 +174,5 @@ enum ToolType: String, CaseIterable, Identifiable {
         }
     }
 }
+
+import SwiftUI

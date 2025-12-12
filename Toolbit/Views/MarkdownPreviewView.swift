@@ -72,25 +72,14 @@ func hello() {
 """
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            headerView
+        HStack(spacing: 16) {
+            // 左侧：Markdown 输入
+            inputPanel
             
-            Divider()
-            
-            // 主内容区
-            HSplitView {
-                // 左侧：Markdown 输入
-                inputPanel
-                    .frame(minWidth: 350)
-                
-                // 右侧：预览
-                previewPanel
-                    .frame(minWidth: 350)
-            }
-            .padding()
+            // 右侧：预览
+            previewPanel
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -98,124 +87,135 @@ func hello() {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             inputText = ""
             hasInitialized = false
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Markdown 预览")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("实时预览 Markdown 文档")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Button(action: loadSample) {
-                Label("加载示例", systemImage: "doc.text")
-            }
-            .buttonStyle(.bordered)
-            
-            Button(action: clearAll) {
-                Label("清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(inputText.isEmpty)
-        }
-        .padding()
-    }
-    
     // MARK: - 输入面板
     private var inputPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
-                Text("Markdown 源码")
-                    .font(.headline)
+                Image(systemName: "doc.text")
+                    .foregroundStyle(.orange)
+                Text("Markdown")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
-                if !inputText.isEmpty {
-                    Text("\(inputText.count) 字符")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("\(inputText.count) 字符")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
                 
-                Button(action: pasteInput) {
-                    Label("粘贴", systemImage: "doc.on.clipboard")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                Divider()
+                    .frame(height: 12)
+                    .padding(.horizontal, 6)
                 
-                if !inputText.isEmpty {
-                    Button(action: copyInput) {
-                        Label("复制", systemImage: "doc.on.doc")
+                HStack(spacing: 4) {
+                    Button(action: loadSample) {
+                        Image(systemName: "doc.badge.plus")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .help("加载示例")
+                    
+                    Button(action: pasteInput) {
+                        Image(systemName: "doc.on.clipboard")
+                    }
+                    .help("粘贴")
+                    
+                    Button(action: copyInput) {
+                        Image(systemName: "doc.on.doc")
+                    }
+                    .disabled(inputText.isEmpty)
+                    .help("复制")
                     
                     Button(action: { inputText = "" }) {
-                        Label("清空", systemImage: "xmark")
+                        Image(systemName: "xmark.circle")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .disabled(inputText.isEmpty)
+                    .help("清空")
                 }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
+            // 编辑区
             ZStack(alignment: .topLeading) {
                 CodeEditor(text: $inputText)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
                 
                 if inputText.isEmpty {
                     Text("输入 Markdown 文本...")
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
-                        .padding(16)
+                        .padding(12)
                         .allowsHitTesting(false)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
         }
     }
     
     // MARK: - 预览面板
     private var previewPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
+                Image(systemName: "eye")
+                    .foregroundStyle(.blue)
                 Text("预览")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
                 Button(action: exportHTML) {
-                    Label("导出 HTML", systemImage: "square.and.arrow.up")
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("导出")
+                    }
+                    .font(.caption)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
                 .disabled(inputText.isEmpty)
+                .help("导出 HTML")
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
+            // 预览区
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
                 if inputText.isEmpty {
-                    Text("预览将显示在这里...")
-                        .font(.body)
-                        .foregroundStyle(.tertiary)
+                    VStack(spacing: 8) {
+                        Image(systemName: "doc.richtext")
+                            .font(.system(size: 32))
+                            .foregroundStyle(.tertiary)
+                        Text("预览将显示在这里")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     MarkdownWebView(markdown: inputText)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
         }
     }
     
@@ -691,3 +691,4 @@ struct MarkdownParser {
     MarkdownPreviewView()
         .frame(width: 1000, height: 700)
 }
+

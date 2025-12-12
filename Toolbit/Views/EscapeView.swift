@@ -5,32 +5,36 @@ struct EscapeView: View {
     @State private var inputText: String = ""
     @State private var escapedText: String = ""
     @State private var unescapedText: String = ""
-    @State private var escapeError: String?
-    @State private var unescapeError: String?
     @State private var hasInitialized: Bool = false
-    
-    // 防抖任务
     @State private var debounceTask: Task<Void, Never>?
+    @State private var copiedType: CopiedType?
+    
+    enum CopiedType {
+        case escaped, unescaped
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 16) {
             // 输入区域
             VStack(alignment: .leading, spacing: 0) {
+                // 标题栏
                 HStack {
                     Text("输入文本")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.headline)
                         .foregroundStyle(.secondary)
                     
                     Spacer()
                     
-                    if !inputText.isEmpty {
-                        Text("\(inputText.count) 字符")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                    Text("\(inputText.count) 字符")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
                     
-                    HStack(spacing: 8) {
+                    Divider()
+                        .frame(height: 12)
+                        .padding(.horizontal, 8)
+                    
+                    HStack(spacing: 4) {
                         Button(action: pasteInput) {
                             Image(systemName: "doc.on.clipboard")
                         }
@@ -38,7 +42,7 @@ struct EscapeView: View {
                         .help("粘贴")
                         
                         Button(action: { inputText = "" }) {
-                            Image(systemName: "trash")
+                            Image(systemName: "xmark.circle")
                         }
                         .buttonStyle(.borderless)
                         .disabled(inputText.isEmpty)
@@ -48,47 +52,65 @@ struct EscapeView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
+                .background(Color(nsColor: .windowBackgroundColor))
                 
-                Divider()
-                
+                // 文本输入
                 ZStack(alignment: .topLeading) {
-                    CodeEditor(text: $inputText)
-                        .frame(height: 150)
+                    TextEditor(text: $inputText)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .padding(12)
                     
                     if inputText.isEmpty {
                         Text("输入需要转义或反转义的文本...")
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.tertiary)
-                            .padding(16)
+                            .padding(12)
+                            .padding(.top, 8)
                             .allowsHitTesting(false)
                     }
                 }
+                .background(Color(nsColor: .textBackgroundColor))
             }
-            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
+            .frame(height: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+            }
             
-            Divider()
-            
-            // 结果区域
-            HStack(spacing: 0) {
+            // 结果区域 - 左右两栏
+            HStack(spacing: 16) {
                 // 转义结果
-                resultSection(
+                resultPanel(
                     title: "转义结果",
-                    text: escapedText,
-                    error: escapeError,
-                    copyAction: { copyToClipboard(escapedText) }
+                    subtitle: "Escape",
+                    content: escapedText,
+                    icon: "arrow.right.square",
+                    color: .blue,
+                    isCopied: copiedType == .escaped,
+                    onCopy: {
+                        copyToClipboard(escapedText)
+                        showCopied(.escaped)
+                    }
                 )
                 
-                Divider()
-                
                 // 反转义结果
-                resultSection(
+                resultPanel(
                     title: "反转义结果",
-                    text: unescapedText,
-                    error: unescapeError,
-                    copyAction: { copyToClipboard(unescapedText) }
+                    subtitle: "Unescape",
+                    content: unescapedText,
+                    icon: "arrow.left.square",
+                    color: .green,
+                    isCopied: copiedType == .unescaped,
+                    onCopy: {
+                        copyToClipboard(unescapedText)
+                        showCopied(.unescaped)
+                    }
                 )
             }
         }
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -101,86 +123,104 @@ struct EscapeView: View {
             inputText = ""
             escapedText = ""
             unescapedText = ""
-            escapeError = nil
-            unescapeError = nil
             hasInitialized = false
         }
-        .onChange(of: inputText) { _, _ in
-            triggerDebouncedProcess()
-        }
+        .onChange(of: inputText) { _, _ in triggerDebouncedProcess() }
     }
     
-    // MARK: - 结果区域
-    private func resultSection(title: String, text: String, error: String?, copyAction: @escaping () -> Void) -> some View {
+    // MARK: - 结果面板
+    private func resultPanel(
+        title: String,
+        subtitle: String,
+        content: String,
+        icon: String,
+        color: Color,
+        isCopied: Bool,
+        onCopy: @escaping () -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 
                 Spacer()
                 
-                if !text.isEmpty {
-                    Text("\(text.count)")
+                if !content.isEmpty {
+                    Text("\(content.count) 字符")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
+                        .monospacedDigit()
                     
-                    Button(action: copyAction) {
-                        Image(systemName: "doc.on.doc")
+                    Button(action: onCopy) {
+                        HStack(spacing: 4) {
+                            Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                            if isCopied {
+                                Text("已复制")
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(isCopied ? .green : .secondary)
                     }
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
-                    .help("复制")
+                    .help("复制结果")
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            Divider()
-            
-            ZStack(alignment: .topLeading) {
-                if let error = error {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                    .padding(16)
-                } else if text.isEmpty {
+            // 内容区
+            ScrollView {
+                if content.isEmpty {
                     Text("结果将显示在这里...")
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
-                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 } else {
-                    ScrollView {
-                        Text(text)
-                            .font(.system(.body, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                    }
+                    Text(content)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(color.opacity(0.3), lineWidth: 1)
+        }
     }
     
     // MARK: - 操作方法
     
+    private func showCopied(_ type: CopiedType) {
+        copiedType = type
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if copiedType == type {
+                copiedType = nil
+            }
+        }
+    }
+    
     private func triggerDebouncedProcess() {
         debounceTask?.cancel()
-        
         debounceTask = Task {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            
+            try? await Task.sleep(nanoseconds: 150_000_000)
             if !Task.isCancelled {
-                await MainActor.run {
-                    processText()
-                }
+                await MainActor.run { processText() }
             }
         }
     }
@@ -189,23 +229,11 @@ struct EscapeView: View {
         guard !inputText.isEmpty else {
             escapedText = ""
             unescapedText = ""
-            escapeError = nil
-            unescapeError = nil
             return
         }
         
-        // 转义处理
-        escapeText()
-        
-        // 反转义处理
-        unescapeText()
-    }
-    
-    private func escapeText() {
-        var result = inputText
-        
-        // 转义特殊字符
-        result = result
+        // 转义
+        escapedText = inputText
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
             .replacingOccurrences(of: "'", with: "\\'")
@@ -214,15 +242,8 @@ struct EscapeView: View {
             .replacingOccurrences(of: "\t", with: "\\t")
             .replacingOccurrences(of: "\0", with: "\\0")
         
-        escapedText = result
-        escapeError = nil
-    }
-    
-    private func unescapeText() {
-        var result = inputText
-        
-        // 反转义处理 - 注意顺序很重要
-        result = result
+        // 反转义
+        unescapedText = inputText
             .replacingOccurrences(of: "\\n", with: "\n")
             .replacingOccurrences(of: "\\r", with: "\r")
             .replacingOccurrences(of: "\\t", with: "\t")
@@ -230,14 +251,10 @@ struct EscapeView: View {
             .replacingOccurrences(of: "\\'", with: "'")
             .replacingOccurrences(of: "\\\"", with: "\"")
             .replacingOccurrences(of: "\\\\", with: "\\")
-        
-        unescapedText = result
-        unescapeError = nil
     }
     
     private func checkPasteboardOnAppear() {
-        let pasteboard = NSPasteboard.general
-        if let string = pasteboard.string(forType: .string) {
+        if let string = NSPasteboard.general.string(forType: .string) {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty && trimmed.count < 10000 {
                 inputText = trimmed
@@ -246,16 +263,14 @@ struct EscapeView: View {
     }
     
     private func pasteInput() {
-        let pasteboard = NSPasteboard.general
-        if let string = pasteboard.string(forType: .string) {
+        if let string = NSPasteboard.general.string(forType: .string) {
             inputText = string
         }
     }
     
     private func copyToClipboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
 

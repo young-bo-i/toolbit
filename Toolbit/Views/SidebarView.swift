@@ -6,6 +6,7 @@ struct SidebarView: View {
     
     var body: some View {
         List(selection: $selectedTool) {
+            // 工具分类
             ForEach(ToolCategory.allCases) { category in
                 DisclosureGroup(
                     isExpanded: expandedBinding(for: category)
@@ -15,13 +16,20 @@ struct SidebarView: View {
                             Text(tool.displayName)
                         } icon: {
                             Image(systemName: tool.icon)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(tool.color)
                         }
                         .tag(tool)
                     }
                 } label: {
-                    Text(category.displayName)
-                        .font(.headline)
+                    HStack {
+                        Image(systemName: category.icon)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                        
+                        Text(category.displayName)
+                            .font(.headline)
+                    }
                 }
                 .tint(.secondary)
             }
@@ -29,21 +37,18 @@ struct SidebarView: View {
         .listStyle(.sidebar)
         .frame(minWidth: 200, maxWidth: 260)
         .onChange(of: selectedTool) { _, newValue in
-            // 选中工具时展开对应分类，使用轻量动画
-            if !expandedCategories.contains(newValue.category) {
-                withAnimation(.easeOut(duration: 0.15)) {
-                    expandedCategories.insert(newValue.category)
-                }
+            // 选中工具时展开对应分类（首页除外）
+            if newValue != .home && !expandedCategories.contains(newValue.category) {
+                _ = expandedCategories.insert(newValue.category)
             }
         }
     }
     
-    // 创建展开状态的 Binding，避免在 set 中使用动画
+    // 创建展开状态的 Binding
     private func expandedBinding(for category: ToolCategory) -> Binding<Bool> {
         Binding(
             get: { expandedCategories.contains(category) },
             set: { isExpanded in
-                // 不在这里使用 withAnimation，让系统处理默认动画
                 if isExpanded {
                     expandedCategories.insert(category)
                 } else {
@@ -55,5 +60,5 @@ struct SidebarView: View {
 }
 
 #Preview {
-    SidebarView(selectedTool: .constant(.characterCount))
+    SidebarView(selectedTool: .constant(.home))
 }

@@ -25,23 +25,14 @@ struct Base64ImageView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            headerView
+        HStack(spacing: 16) {
+            // 左侧：图片区域
+            imagePanel
             
-            Divider()
-            
-            // 主内容区
-            HStack(spacing: 20) {
-                // 左侧：图片区域
-                imagePanel
-                
-                // 右侧：Base64 文本区域
-                base64Panel
-            }
-            .padding()
+            // 右侧：Base64 文本区域
+            base64Panel
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -49,7 +40,6 @@ struct Base64ImageView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             debounceTask?.cancel()
             debounceTask = nil
             base64Text = ""
@@ -57,11 +47,9 @@ struct Base64ImageView: View {
             errorMessage = nil
             hasInitialized = false
         }
-        // 全局粘贴快捷键 ⌘+V
         .onPasteCommand(of: [.image, .png, .jpeg, .gif, .bmp, .fileURL, .plainText]) { providers in
             handlePaste(providers: providers)
         }
-        // 备用：使用 keyboardShortcut 监听
         .background {
             Button("") {
                 handleGlobalPaste()
@@ -127,114 +115,91 @@ struct Base64ImageView: View {
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Base64 图片")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("图片与 Base64 编码自动互转，支持拖拽和粘贴")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            if isProcessing {
-                ProgressView()
-                    .scaleEffect(0.8)
-                    .padding(.trailing, 8)
-            }
-            
-            Button(action: clearAll) {
-                Label("全部清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(base64Text.isEmpty && currentImage == nil)
-        }
-        .padding()
-    }
-    
     // MARK: - 图片面板
     private var imagePanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
-                Text("图片预览")
-                    .font(.headline)
+                Image(systemName: "photo")
+                    .foregroundStyle(.blue)
+                Text("图片")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
-                // 图片操作按钮
-                HStack(spacing: 8) {
+                if isProcessing {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                }
+                
+                HStack(spacing: 4) {
                     Button(action: pasteImage) {
-                        Label("粘贴", systemImage: "doc.on.clipboard")
+                        Image(systemName: "doc.on.clipboard")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .help("粘贴图片")
                     
                     Button(action: selectImageFile) {
-                        Label("选择", systemImage: "folder")
+                        Image(systemName: "folder")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .help("选择文件")
                     
-                    if currentImage != nil {
-                        Button(action: copyImage) {
-                            Label("复制", systemImage: "doc.on.doc")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: saveImage) {
-                            Label("保存", systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: clearImage) {
-                            Label("清空", systemImage: "xmark")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                    Button(action: copyImage) {
+                        Image(systemName: "doc.on.doc")
                     }
+                    .disabled(currentImage == nil)
+                    .help("复制")
+                    
+                    Button(action: saveImage) {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .disabled(currentImage == nil)
+                    .help("保存")
+                    
+                    Button(action: clearImage) {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .disabled(currentImage == nil)
+                    .help("清空")
                 }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            // 图片显示/拖拽区域
+            // 图片显示区
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(
-                                isDropTargeted ? Color.blue : Color.gray.opacity(0.3),
-                                style: StrokeStyle(lineWidth: isDropTargeted ? 3 : 2, dash: currentImage == nil ? [8] : [])
-                            )
-                    }
+                // 透明背景网格
+                CheckerboardBackground()
                 
                 if let image = currentImage {
                     Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .padding(16)
+                        .padding(24)
                 } else {
-                    VStack(spacing: 16) {
+                    VStack(spacing: 12) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 48))
+                            .font(.system(size: 40))
                             .foregroundStyle(.tertiary)
                         
                         Text("拖拽图片到此处")
-                            .font(.headline)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                         
-                        Text("或点击上方按钮选择/粘贴图片")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                        
-                        Text("支持 PNG、JPEG、GIF、WebP 等格式")
+                        Text("或点击上方按钮选择 / 粘贴图片")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
+                }
+                
+                // 拖拽高亮
+                if isDropTargeted {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [8]))
+                        .padding(8)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -245,114 +210,117 @@ struct Base64ImageView: View {
             
             // 图片信息
             if let image = currentImage {
-                imageInfoView(image: image)
+                HStack(spacing: 16) {
+                    Label("\(Int(image.size.width)) × \(Int(image.size.height))", systemImage: "aspectratio")
+                    if let tiffData = image.tiffRepresentation {
+                        Label(formatFileSize(tiffData.count), systemImage: "doc")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(nsColor: .windowBackgroundColor))
             }
         }
-        .frame(minWidth: 350)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+        }
     }
     
     // MARK: - Base64 面板
     private var base64Panel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
+                Image(systemName: "text.alignleft")
+                    .foregroundStyle(.green)
                 Text("Base64 编码")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                 
                 Spacer()
                 
-                // Base64 操作按钮
-                HStack(spacing: 8) {
-                    Button(action: pasteBase64) {
-                        Label("粘贴", systemImage: "doc.on.clipboard")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    
-                    if !base64Text.isEmpty {
-                        Text("\(formatCharCount(base64Text.count))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(.ultraThinMaterial))
-                        
-                        Button(action: copyBase64) {
-                            Label("复制", systemImage: "doc.on.doc")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: saveBase64) {
-                            Label("保存", systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: clearBase64) {
-                            Label("清空", systemImage: "xmark")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-            }
-            
-            // Base64 文本显示区域 - 使用 ScrollView + Text 替代 TextEditor 提升性能
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                Text(formatCharCount(base64Text.count))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
                 
+                Divider()
+                    .frame(height: 12)
+                    .padding(.horizontal, 6)
+                
+                HStack(spacing: 4) {
+                    Button(action: pasteBase64) {
+                        Image(systemName: "doc.on.clipboard")
+                    }
+                    .help("粘贴 Base64")
+                    
+                    Button(action: copyBase64) {
+                        Image(systemName: "doc.on.doc")
+                    }
+                    .disabled(base64Text.isEmpty)
+                    .help("复制")
+                    
+                    Button(action: saveBase64) {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .disabled(base64Text.isEmpty)
+                    .help("保存")
+                    
+                    Button(action: clearBase64) {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .disabled(base64Text.isEmpty)
+                    .help("清空")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
+            
+            // Base64 文本显示
+            ScrollView {
                 if base64Text.isEmpty {
                     Text("粘贴 Base64 编码，将自动解码为图片...")
-                        .font(.system(.caption, design: .monospaced))
+                        .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
-                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 } else {
-                    ScrollView {
-                        Text(base64Text)
-                            .font(.system(.caption2, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                    }
+                    Text(base64Text)
+                        .font(.system(.caption2, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
             
             // 错误信息
             if let error = errorMessage {
                 HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
+                    Image(systemName: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
                     Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
                 }
-                .padding(8)
-                .background {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.orange.opacity(0.1))
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.1))
             }
         }
-        .frame(minWidth: 350)
-    }
-    
-    // MARK: - 图片信息视图
-    private func imageInfoView(image: NSImage) -> some View {
-        HStack(spacing: 16) {
-            Label("\(Int(image.size.width)) x \(Int(image.size.height))", systemImage: "aspectratio")
-            
-            if let tiffData = image.tiffRepresentation {
-                Label(formatFileSize(tiffData.count), systemImage: "doc")
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(8)
-        .background {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
         }
     }
     

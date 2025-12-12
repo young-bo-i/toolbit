@@ -7,92 +7,112 @@ struct Base64TextView: View {
     @State private var decodedResult: String = ""
     @State private var decodeError: String?
     @State private var hasInitialized: Bool = false
-    
-    // 防抖任务
     @State private var debounceTask: Task<Void, Never>?
+    @State private var copiedType: CopiedType?
+    
+    enum CopiedType {
+        case encoded, decoded
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 输入区
+        VStack(spacing: 16) {
+            // 输入区域
             VStack(alignment: .leading, spacing: 0) {
                 // 标题栏
                 HStack {
                     Text("输入文本")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.headline)
                         .foregroundStyle(.secondary)
                     
                     Spacer()
                     
-                    if !inputText.isEmpty {
-                        Text("\(inputText.count) 字符")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                    Text("\(inputText.count) 字符")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
                     
-                    HStack(spacing: 8) {
+                    Divider()
+                        .frame(height: 12)
+                        .padding(.horizontal, 8)
+                    
+                    HStack(spacing: 4) {
                         Button(action: pasteFromClipboard) {
                             Image(systemName: "doc.on.clipboard")
                         }
-                        .buttonStyle(.borderless)
                         .help("粘贴")
                         
                         Button(action: { inputText = "" }) {
-                            Image(systemName: "trash")
+                            Image(systemName: "xmark.circle")
                         }
-                        .buttonStyle(.borderless)
                         .disabled(inputText.isEmpty)
                         .help("清空")
                     }
+                    .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
+                .background(Color(nsColor: .windowBackgroundColor))
                 
-                Divider()
-                
-                TextEditor(text: $inputText)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .autocorrectionDisabled(true)
-                    .padding(12)
-                    .frame(height: 120)
-                    .overlay {
-                        if inputText.isEmpty {
-                            Text("输入普通文本进行编码，或输入 Base64 编码进行解码...")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundStyle(.tertiary)
-                                .padding(16)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                .allowsHitTesting(false)
-                        }
+                // 文本输入
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $inputText)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .padding(12)
+                    
+                    if inputText.isEmpty {
+                        Text("输入普通文本进行编码，或输入 Base64 进行解码...")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(12)
+                            .padding(.top, 8)
+                            .allowsHitTesting(false)
                     }
+                }
+                .background(Color(nsColor: .textBackgroundColor))
             }
-            .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
-            
-            Divider()
+            .frame(height: 150)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+            }
             
             // 结果区域
-            HStack(spacing: 0) {
+            HStack(spacing: 16) {
                 // 编码结果
                 resultPanel(
-                    title: "Base64 编码结果",
+                    title: "编码结果",
+                    subtitle: "Encode",
                     content: encodedResult,
                     error: nil,
-                    onCopy: { copyToClipboard(encodedResult) }
+                    icon: "arrow.right.square",
+                    color: .blue,
+                    isCopied: copiedType == .encoded,
+                    onCopy: {
+                        copyToClipboard(encodedResult)
+                        showCopied(.encoded)
+                    }
                 )
-                
-                Divider()
                 
                 // 解码结果
                 resultPanel(
-                    title: "Base64 解码结果",
+                    title: "解码结果",
+                    subtitle: "Decode",
                     content: decodedResult,
                     error: decodeError,
-                    onCopy: { copyToClipboard(decodedResult) }
+                    icon: "arrow.left.square",
+                    color: .green,
+                    isCopied: copiedType == .decoded,
+                    onCopy: {
+                        copyToClipboard(decodedResult)
+                        showCopied(.decoded)
+                    }
                 )
             }
         }
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -108,89 +128,113 @@ struct Base64TextView: View {
             decodeError = nil
             hasInitialized = false
         }
-        .onChange(of: inputText) { _, _ in
-            triggerDebouncedProcess()
-        }
+        .onChange(of: inputText) { _, _ in triggerDebouncedProcess() }
     }
     
     // MARK: - 结果面板
     private func resultPanel(
         title: String,
+        subtitle: String,
         content: String,
         error: String?,
+        icon: String,
+        color: Color,
+        isCopied: Bool,
         onCopy: @escaping () -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 
                 Spacer()
                 
                 if !content.isEmpty {
-                    Text("\(content.count)")
+                    Text("\(content.count) 字符")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
+                        .monospacedDigit()
                     
                     Button(action: onCopy) {
-                        Image(systemName: "doc.on.doc")
+                        HStack(spacing: 4) {
+                            Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                            if isCopied {
+                                Text("已复制")
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(isCopied ? .green : .secondary)
                     }
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
-                    .help("复制")
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            Divider()
-            
-            ZStack(alignment: .topLeading) {
-                if let error = error {
-                    VStack(spacing: 12) {
+            // 内容区
+            ScrollView {
+                if let error = error, content.isEmpty {
+                    HStack {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.title)
                             .foregroundStyle(.orange)
                         Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
                 } else if content.isEmpty {
                     Text("结果将显示在这里...")
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
-                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 } else {
-                    ScrollView {
-                        Text(content)
-                            .font(.system(.body, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                    }
+                    Text(content)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(color.opacity(0.3), lineWidth: 1)
+        }
+    }
+    
+    // MARK: - 复制反馈
+    private func showCopied(_ type: CopiedType) {
+        copiedType = type
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if copiedType == type {
+                copiedType = nil
+            }
+        }
     }
     
     // MARK: - 操作方法
     
     private func triggerDebouncedProcess() {
         debounceTask?.cancel()
-        
         debounceTask = Task {
-            try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-            
+            try? await Task.sleep(nanoseconds: 150_000_000)
             if !Task.isCancelled {
-                await MainActor.run {
-                    processInput()
-                }
+                await MainActor.run { processInput() }
             }
         }
     }
@@ -205,25 +249,23 @@ struct Base64TextView: View {
             return
         }
         
-        // 编码：将输入文本编码为 Base64
+        // 编码
         if let data = text.data(using: .utf8) {
             encodedResult = data.base64EncodedString()
         } else {
             encodedResult = ""
         }
         
-        // 解码：尝试将输入文本作为 Base64 解码
+        // 解码
         decodeBase64(text)
     }
     
     private func decodeBase64(_ text: String) {
-        // 清理输入
         let cleanText = text
             .replacingOccurrences(of: "\n", with: "")
             .replacingOccurrences(of: "\r", with: "")
             .replacingOccurrences(of: " ", with: "")
         
-        // 尝试解码
         if let data = Data(base64Encoded: cleanText),
            let decoded = String(data: data, encoding: .utf8) {
             decodedResult = decoded
@@ -239,26 +281,23 @@ struct Base64TextView: View {
     }
     
     private func checkPasteboardOnAppear() {
-        let pasteboard = NSPasteboard.general
-        if let string = pasteboard.string(forType: .string) {
+        if let string = NSPasteboard.general.string(forType: .string) {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty && trimmed.count < 10000 { // 限制长度避免卡顿
+            if !trimmed.isEmpty && trimmed.count < 10000 {
                 inputText = trimmed
             }
         }
     }
     
     private func pasteFromClipboard() {
-        let pasteboard = NSPasteboard.general
-        if let string = pasteboard.string(forType: .string) {
+        if let string = NSPasteboard.general.string(forType: .string) {
             inputText = string
         }
     }
     
     private func copyToClipboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
 

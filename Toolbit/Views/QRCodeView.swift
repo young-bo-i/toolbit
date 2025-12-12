@@ -9,28 +9,17 @@ struct QRCodeView: View {
     @State private var errorMessage: String?
     @State private var isDropTargeted: Bool = false
     @State private var hasInitialized: Bool = false
-    
-    // 防抖任务
     @State private var debounceTask: Task<Void, Never>?
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 标题栏
-            headerView
+        HStack(spacing: 16) {
+            // 左侧：文本输入
+            textPanel
             
-            Divider()
-            
-            // 主内容区
-            HStack(spacing: 20) {
-                // 左侧：文本输入区域
-                textPanel
-                
-                // 右侧：二维码区域
-                qrCodePanel
-            }
-            .padding()
+            // 右侧：二维码
+            qrCodePanel
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -38,7 +27,6 @@ struct QRCodeView: View {
             }
         }
         .onDisappear {
-            // 切换页面时清空状态
             debounceTask?.cancel()
             debounceTask = nil
             inputText = ""
@@ -52,109 +40,113 @@ struct QRCodeView: View {
         }
     }
     
-    // MARK: - 标题栏
-    private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("二维码工具")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("文本生成二维码，或识别二维码内容")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Button(action: clearAll) {
-                Label("全部清空", systemImage: "trash")
-            }
-            .buttonStyle(.bordered)
-            .disabled(inputText.isEmpty && qrCodeImage == nil)
-        }
-        .padding()
-    }
-    
     // MARK: - 文本面板
     private var textPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("文本内容")
-                    .font(.headline)
-                Spacer()
-                
-                HStack(spacing: 8) {
-                    if !inputText.isEmpty {
-                        Text("\(inputText.count) 字符")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+        VStack(spacing: 0) {
+            // 输入区
+            VStack(alignment: .leading, spacing: 0) {
+                // 标题栏
+                HStack {
+                    Image(systemName: "text.alignleft")
+                        .foregroundStyle(.blue)
+                    Text("文本内容")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                     
-                    Button(action: pasteText) {
-                        Label("粘贴", systemImage: "doc.on.clipboard")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    Spacer()
                     
-                    if !inputText.isEmpty {
-                        Button(action: copyText) {
-                            Label("复制", systemImage: "doc.on.doc")
+                    Text("\(inputText.count) 字符")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
+                    
+                    Divider()
+                        .frame(height: 12)
+                        .padding(.horizontal, 6)
+                    
+                    HStack(spacing: 4) {
+                        Button(action: pasteText) {
+                            Image(systemName: "doc.on.clipboard")
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .help("粘贴")
+                        
+                        Button(action: copyText) {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        .disabled(inputText.isEmpty)
+                        .help("复制")
                         
                         Button(action: { inputText = "" }) {
-                            Label("清空", systemImage: "xmark")
+                            Image(systemName: "xmark.circle")
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .disabled(inputText.isEmpty)
+                        .help("清空")
                     }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                 }
-            }
-            
-            // 文本输入区
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $inputText)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .autocorrectionDisabled(true)
-                    .padding(12)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(nsColor: .windowBackgroundColor))
                 
-                if inputText.isEmpty {
-                    Text("输入文本自动生成二维码...")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .padding(16)
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // 解码结果显示
-            if !decodedText.isEmpty && decodedText != inputText {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("识别结果")
-                            .font(.headline)
-                        Spacer()
-                        Button(action: { 
-                            inputText = decodedText 
-                        }) {
-                            Label("使用此内容", systemImage: "arrow.up.square")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: { copyToClipboard(decodedText) }) {
-                            Label("复制", systemImage: "doc.on.doc")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                // 文本输入
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $inputText)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .padding(12)
+                    
+                    if inputText.isEmpty {
+                        Text("输入文本自动生成二维码...")
+                            .font(.body)
+                            .foregroundStyle(.tertiary)
+                            .padding(12)
+                            .padding(.top, 8)
+                            .allowsHitTesting(false)
                     }
+                }
+                .background(Color(nsColor: .textBackgroundColor))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+            }
+            
+            // 识别结果（如果有）
+            if !decodedText.isEmpty && decodedText != inputText {
+                VStack(alignment: .leading, spacing: 0) {
+                    // 标题栏
+                    HStack {
+                        Image(systemName: "text.viewfinder")
+                            .foregroundStyle(.green)
+                        Text("识别结果")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 4) {
+                            Button(action: { inputText = decodedText }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.square")
+                                    Text("使用")
+                                }
+                                .font(.caption)
+                            }
+                            .help("使用此内容生成新二维码")
+                            
+                            Button(action: { copyToClipboard(decodedText) }) {
+                                Image(systemName: "doc.on.doc")
+                            }
+                            .help("复制")
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color(nsColor: .windowBackgroundColor))
                     
                     ScrollView {
                         Text(decodedText)
@@ -164,94 +156,100 @@ struct QRCodeView: View {
                             .padding(12)
                     }
                     .frame(height: 100)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
+                    .background(Color(nsColor: .textBackgroundColor))
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                }
+                .padding(.top, 12)
             }
         }
-        .frame(minWidth: 350)
     }
     
     // MARK: - 二维码面板
     private var qrCodePanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
             HStack {
+                Image(systemName: "qrcode")
+                    .foregroundStyle(.purple)
                 Text("二维码")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 Spacer()
                 
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     Button(action: pasteImage) {
-                        Label("粘贴", systemImage: "doc.on.clipboard")
+                        Image(systemName: "doc.on.clipboard")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .help("粘贴图片")
                     
                     Button(action: selectImageFile) {
-                        Label("选择", systemImage: "folder")
+                        Image(systemName: "folder")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .help("选择图片")
                     
-                    if qrCodeImage != nil {
-                        Button(action: copyImage) {
-                            Label("复制", systemImage: "doc.on.doc")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: saveImage) {
-                            Label("保存", systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button(action: clearImage) {
-                            Label("清空", systemImage: "xmark")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                    Button(action: copyImage) {
+                        Image(systemName: "doc.on.doc")
                     }
+                    .disabled(qrCodeImage == nil)
+                    .help("复制")
+                    
+                    Button(action: saveImage) {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .disabled(qrCodeImage == nil)
+                    .help("保存")
+                    
+                    Button(action: clearImage) {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .disabled(qrCodeImage == nil)
+                    .help("清空")
                 }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .windowBackgroundColor))
             
-            // 二维码显示/拖拽区域
+            // 二维码显示区
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(
-                                isDropTargeted ? Color.blue : Color.gray.opacity(0.3),
-                                style: StrokeStyle(lineWidth: isDropTargeted ? 3 : 2, dash: qrCodeImage == nil ? [8] : [])
-                            )
-                    }
-                
                 if let image = qrCodeImage {
                     Image(nsImage: image)
                         .resizable()
                         .interpolation(.none)
                         .aspectRatio(contentMode: .fit)
-                        .padding(24)
+                        .padding(32)
                 } else {
-                    VStack(spacing: 16) {
-                        Image(systemName: "qrcode")
+                    VStack(spacing: 12) {
+                        Image(systemName: "qrcode.viewfinder")
                             .font(.system(size: 48))
                             .foregroundStyle(.tertiary)
                         
                         Text("输入文本生成二维码")
-                            .font(.headline)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                         
-                        Text("或拖拽/粘贴二维码图片进行识别")
+                        Text("或拖拽 / 粘贴二维码图片进行识别")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 }
+                
+                // 拖拽状态边框
+                if isDropTargeted {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [8]))
+                        .padding(8)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .textBackgroundColor))
             .onDrop(of: [.image, .fileURL], isTargeted: $isDropTargeted) { providers in
                 handleDrop(providers: providers)
                 return true
@@ -260,20 +258,23 @@ struct QRCodeView: View {
             // 错误信息
             if let error = errorMessage {
                 HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
+                    Image(systemName: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
                     Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
                 }
-                .padding(8)
-                .background {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.orange.opacity(0.1))
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.1))
             }
         }
-        .frame(minWidth: 350)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+        }
     }
     
     // MARK: - 操作方法

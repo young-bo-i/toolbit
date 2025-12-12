@@ -30,6 +30,10 @@
 		A1000015238F0002 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000027238F0001 /* UpdateManager.swift */; };
 		A1000016238F0002 /* UpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000028238F0001 /* UpdateView.swift */; };
 		A1000017238F0002 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000029238F0001 /* LanguageManager.swift */; };
+		A1000018238F0002 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002A238F0001 /* HomeView.swift */; };
+		A1000019238F0002 /* AppLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002B238F0001 /* AppLogoView.swift */; };
+		A100001A238F0002 /* IconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002C238F0001 /* IconGenerator.swift */; };
+		A100001B238F0002 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002D238F0001 /* WindowAccessor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +62,10 @@
 		A1000027238F0001 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 		A1000028238F0001 /* UpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateView.swift; sourceTree = "<group>"; };
 		A1000029238F0001 /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
+		A100002A238F0001 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A100002B238F0001 /* AppLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogoView.swift; sourceTree = "<group>"; };
+		A100002C238F0001 /* IconGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconGenerator.swift; sourceTree = "<group>"; };
+		A100002D238F0001 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000036238F0001 /* Components */,
+				A100002A238F0001 /* HomeView.swift */,
 				A1000014238F0001 /* SidebarView.swift */,
 				A1000015238F0001 /* CharacterCountView.swift */,
 				A1000017238F0001 /* StringDiffView.swift */,
@@ -129,6 +138,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000023238F0001 /* CodeEditor.swift */,
+				A100002B238F0001 /* AppLogoView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -137,6 +147,8 @@
 			isa = PBXGroup;
 			children = (
 				A1000018238F0001 /* DiffEngine.swift */,
+				A100002C238F0001 /* IconGenerator.swift */,
+				A100002D238F0001 /* WindowAccessor.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -250,6 +262,10 @@
 				A1000015238F0002 /* UpdateManager.swift in Sources */,
 				A1000016238F0002 /* UpdateView.swift in Sources */,
 				A1000017238F0002 /* LanguageManager.swift in Sources */,
+				A1000018238F0002 /* HomeView.swift in Sources */,
+				A1000019238F0002 /* AppLogoView.swift in Sources */,
+				A100001A238F0002 /* IconGenerator.swift in Sources */,
+				A100001B238F0002 /* WindowAccessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
