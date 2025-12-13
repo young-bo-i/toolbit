@@ -35,12 +35,12 @@ struct SQLFormatterView: View {
     ]
     
     var body: some View {
-        HStack(spacing: 16) {
+            HStack(spacing: 16) {
             // 左侧：输入
-            inputPanel
-            
+                inputPanel
+                
             // 右侧：输出
-            outputPanel
+                outputPanel
         }
         .padding(20)
         .onAppear {
@@ -90,13 +90,13 @@ struct SQLFormatterView: View {
                     }
                     .help("粘贴")
                     
-                    Button(action: compressSQL) {
+                        Button(action: compressSQL) {
                         Image(systemName: "arrow.down.right.and.arrow.up.left")
-                    }
+                        }
                     .disabled(inputText.isEmpty)
                     .help("压缩 SQL")
-                    
-                    Button(action: { inputText = "" }) {
+                        
+                        Button(action: { inputText = "" }) {
                         Image(systemName: "xmark.circle")
                     }
                     .disabled(inputText.isEmpty)
@@ -166,19 +166,19 @@ struct SQLFormatterView: View {
                     .frame(height: 12)
                     .padding(.horizontal, 6)
                 
-                Text("\(outputText.count) 字符")
-                    .font(.caption)
+                    Text("\(outputText.count) 字符")
+                        .font(.caption)
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
-                
-                Button(action: copyOutput) {
+                    
+                    Button(action: copyOutput) {
                     Image(systemName: "doc.on.doc")
-                }
+                    }
                 .buttonStyle(.borderless)
                 .disabled(outputText.isEmpty)
                 .foregroundStyle(.secondary)
                 .help("复制")
-            }
+                }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(Color(nsColor: .windowBackgroundColor))
@@ -192,13 +192,13 @@ struct SQLFormatterView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                 } else {
-                    Text(outputText)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
+                        Text(outputText)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                    }
                 }
-            }
             .background(Color(nsColor: .textBackgroundColor))
             
             // 错误信息
@@ -208,7 +208,7 @@ struct SQLFormatterView: View {
                         .foregroundStyle(.orange)
                     Text(error)
                 }
-                .font(.caption)
+                        .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

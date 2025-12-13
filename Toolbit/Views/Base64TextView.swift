@@ -18,7 +18,7 @@ struct Base64TextView: View {
         VStack(spacing: 16) {
             // 输入区域
             VStack(alignment: .leading, spacing: 0) {
-                // 标题栏
+            // 标题栏
                 HStack {
                     Text("输入文本")
                         .font(.headline)
@@ -30,8 +30,8 @@ struct Base64TextView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
-                    
-                    Divider()
+            
+            Divider()
                         .frame(height: 12)
                         .padding(.horizontal, 8)
                     
@@ -78,15 +78,15 @@ struct Base64TextView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
             }
-            
-            // 结果区域
-            HStack(spacing: 16) {
-                // 编码结果
-                resultPanel(
+                
+                // 结果区域
+                HStack(spacing: 16) {
+                    // 编码结果
+                    resultPanel(
                     title: "编码结果",
                     subtitle: "Encode",
-                    content: encodedResult,
-                    error: nil,
+                        content: encodedResult,
+                        error: nil,
                     icon: "arrow.right.square",
                     color: .blue,
                     isCopied: copiedType == .encoded,
@@ -94,14 +94,14 @@ struct Base64TextView: View {
                         copyToClipboard(encodedResult)
                         showCopied(.encoded)
                     }
-                )
-                
-                // 解码结果
-                resultPanel(
+                    )
+                    
+                    // 解码结果
+                    resultPanel(
                     title: "解码结果",
                     subtitle: "Decode",
-                    content: decodedResult,
-                    error: decodeError,
+                        content: decodedResult,
+                        error: decodeError,
                     icon: "arrow.left.square",
                     color: .green,
                     isCopied: copiedType == .decoded,
@@ -109,9 +109,9 @@ struct Base64TextView: View {
                         copyToClipboard(decodedResult)
                         showCopied(.decoded)
                     }
-                )
+                    )
+                }
             }
-        }
         .padding(20)
         .onAppear {
             if !hasInitialized {
@@ -149,7 +149,7 @@ struct Base64TextView: View {
                     .foregroundStyle(color)
                 
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title)
+                Text(title)
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Text(subtitle)
@@ -171,7 +171,7 @@ struct Base64TextView: View {
                             if isCopied {
                                 Text("已复制")
                             }
-                        }
+                    }
                         .font(.caption)
                         .foregroundStyle(isCopied ? .green : .secondary)
                     }
@@ -201,15 +201,15 @@ struct Base64TextView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                 } else {
-                    Text(content)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
+                        Text(content)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                    }
                 }
-            }
             .background(Color(nsColor: .textBackgroundColor))
-        }
+            }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay {
             RoundedRectangle(cornerRadius: 10)

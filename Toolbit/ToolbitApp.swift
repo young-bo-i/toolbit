@@ -13,21 +13,6 @@ struct ToolbitApp: App {
             ContentView()
                 .id(languageManager.refreshID)
                 .environment(\.languageRefreshID, languageManager.refreshID)
-                .onAppear {
-                    // 启动时自动检查更新
-                    if updateManager.autoCheckEnabled {
-                        Task {
-                            // 延迟 2 秒检查，避免影响启动速度
-                            try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            await updateManager.checkForUpdates()
-                            
-                            // 如果有新版本，显示更新窗口
-                            if case .available = updateManager.status {
-                                openWindow(id: "about")
-                            }
-                        }
-                    }
-                }
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -44,13 +29,20 @@ struct ToolbitApp: App {
             
             // 添加检查更新菜单
             CommandGroup(after: .appInfo) {
-                Button(L10n.menuCheckUpdate) {
-                    openWindow(id: "about")
+                Button {
+                    // 手动检查更新
                     Task {
-                        await updateManager.checkForUpdates()
+                        await updateManager.manualCheckForUpdates()
+                    }
+                } label: {
+                    if updateManager.isManualChecking {
+                        Text(updateManager.manualCheckingStatus)
+                    } else {
+                        Text(L10n.menuCheckUpdate)
                     }
                 }
                 .keyboardShortcut("U", modifiers: [.command, .shift])
+                .disabled(updateManager.isManualChecking)
             }
         }
         
@@ -60,9 +52,9 @@ struct ToolbitApp: App {
                 .id(languageManager.refreshID)
         }
         
-        // 关于/更新窗口
+        // 关于窗口（只显示应用信息，不再显示更新内容）
         Window(L10n.menuAbout, id: "about") {
-            UpdateView()
+            AboutView()
                 .id(languageManager.refreshID)
         }
         .windowStyle(.titleBar)

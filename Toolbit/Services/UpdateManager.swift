@@ -96,6 +96,12 @@ class UpdateManager: ObservableObject {
     @Published var preferredUpdateMethod: UpdateMethod = .homebrew
     @Published var isHomebrewInstalled: Bool = false
     @Published var isInstalledViaHomebrew: Bool = false
+    @Published var showUpdateBanner: Bool = false  // 控制更新横幅显示
+    @Published var isManualChecking: Bool = false  // 手动检查中（用于菜单状态）
+    @Published var manualCheckingStatus: String = ""  // 手动检查状态文字
+    
+    private var periodicCheckTask: Task<Void, Never>?  // 定时检查任务
+    private let checkInterval: TimeInterval = 3600  // 1小时 = 3600秒
     
     // 当前版本
     var currentVersion: String {
@@ -112,6 +118,186 @@ class UpdateManager: ObservableObject {
     private init() {
         loadSettings()
         checkHomebrewStatus()
+    }
+    
+    // MARK: - 启动定时检查更新
+    func startPeriodicUpdateCheck() {
+        // 取消之前的任务
+        periodicCheckTask?.cancel()
+        
+        // 启动新的定时任务
+        periodicCheckTask = Task {
+            // 首次检查
+            await silentCheckAndDownload()
+            
+            // 定时检查（每1小时）
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(checkInterval * 1_000_000_000))
+                if Task.isCancelled { break }
+                await silentCheckAndDownload()
+            }
+        }
+    }
+    
+    // MARK: - 静默检查并下载更新（不显示过程，只在完成后显示横幅）
+    private func silentCheckAndDownload() async {
+        // 如果已经有更新准备好了，直接显示横幅
+        if case .readyToInstall = status {
+            showUpdateBanner = true
+            return
+        }
+        
+        // 静默检查更新
+        await checkForUpdates()
+        
+        // 如果有可用更新，静默下载
+        if case .available(_, let downloadUrl, _) = status {
+            await withCheckedContinuation { continuation in
+                downloadUpdateSilently(from: downloadUrl) {
+                    continuation.resume()
+                }
+            }
+        }
+        
+        // 下载完成后显示横幅
+        if case .readyToInstall = status {
+            showUpdateBanner = true
+        }
+    }
+    
+    // MARK: - 静默下载（不更新 UI 状态，完成后回调）
+    private func downloadUpdateSilently(from urlString: String, completion: @escaping () -> Void) {
+        guard let url = URL(string: urlString) else {
+            completion()
+            return
+        }
+        
+        let session = URLSession(configuration: .default)
+        let task = session.downloadTask(with: url) { [weak self] localURL, response, error in
+            DispatchQueue.main.async {
+                defer { completion() }
+                
+                guard let self = self else { return }
+                
+                if error != nil {
+                    return
+                }
+                
+                guard let localURL = localURL else {
+                    return
+                }
+                
+                // 移动到临时目录
+                let tempDir = FileManager.default.temporaryDirectory
+                let fileName = url.lastPathComponent
+                let destinationURL = tempDir.appendingPathComponent(fileName)
+                
+                do {
+                    if FileManager.default.fileExists(atPath: destinationURL.path) {
+                        try FileManager.default.removeItem(at: destinationURL)
+                    }
+                    try FileManager.default.moveItem(at: localURL, to: destinationURL)
+                    self.status = .readyToInstall(localPath: destinationURL)
+                } catch {
+                    // 静默失败，不显示错误
+                }
+            }
+        }
+        task.resume()
+    }
+    
+    // MARK: - 关闭横幅（用户手动关闭）
+    func dismissBanner() {
+        showUpdateBanner = false
+    }
+    
+    // MARK: - 手动检查更新（菜单触发）
+    func manualCheckForUpdates() async {
+        // 如果正在检查中，忽略
+        guard !isManualChecking else { return }
+        
+        // 如果已经有更新准备好了，直接显示横幅
+        if case .readyToInstall = status {
+            showUpdateBanner = true
+            return
+        }
+        
+        // 开始检查
+        isManualChecking = true
+        manualCheckingStatus = "正在检查..."
+        
+        // 检查更新
+        await checkForUpdates()
+        
+        // 根据结果处理
+        switch status {
+        case .available(_, let downloadUrl, _):
+            // 有更新，开始下载
+            manualCheckingStatus = "正在下载..."
+            
+            await withCheckedContinuation { continuation in
+                downloadUpdateSilently(from: downloadUrl) {
+                    continuation.resume()
+                }
+            }
+            
+            // 下载完成后显示横幅
+            isManualChecking = false
+            manualCheckingStatus = ""
+            
+            if case .readyToInstall = status {
+                showUpdateBanner = true
+            }
+            
+        case .noUpdate:
+            // 没有更新，显示提示弹窗
+            isManualChecking = false
+            manualCheckingStatus = ""
+            showNoUpdateAlert()
+            
+        case .error(let message):
+            // 错误，显示错误弹窗
+            isManualChecking = false
+            manualCheckingStatus = ""
+            showErrorAlert(message: message)
+            
+        default:
+            isManualChecking = false
+            manualCheckingStatus = ""
+        }
+    }
+    
+    // MARK: - 显示"已是最新版本"弹窗
+    private func showNoUpdateAlert() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "已是最新版本"
+            alert.informativeText = "当前版本 \(self.currentVersion) 已经是最新版本。"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "好的")
+            
+            // 显示弹窗
+            alert.runModal()
+        }
+    }
+    
+    // MARK: - 显示错误弹窗
+    private func showErrorAlert(message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "检查更新失败"
+            alert.informativeText = message
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "好的")
+            
+            alert.runModal()
+        }
+    }
+    
+    // MARK: - 停止定时检查
+    func stopPeriodicUpdateCheck() {
+        periodicCheckTask?.cancel()
+        periodicCheckTask = nil
     }
     
     // MARK: - 检查 Homebrew 状态
@@ -432,7 +618,7 @@ class UpdateManager: ObservableObject {
             // 使用 exit() 强制退出，确保应用一定会关闭
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 // 先尝试正常退出
-                NSApplication.shared.terminate(nil)
+            NSApplication.shared.terminate(nil)
                 
                 // 如果 terminate 被阻止，强制退出
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

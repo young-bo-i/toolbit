@@ -255,9 +255,9 @@ jobs:
           2. 双击打开 DMG
           3. 将 Toolbit 拖到 Applications 文件夹
           4. 如果提示"应用已损坏"，请在终端运行：
-             ```bash
+          ```bash
              sudo xattr -cr /Applications/Toolbit.app
-             ```
+          ```
           
           #### 方式三：应用内更新
           打开 Toolbit → 菜单栏 → 检查更新

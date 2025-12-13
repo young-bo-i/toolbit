@@ -11,21 +11,21 @@ struct CharacterCountView: View {
         VStack(spacing: 0) {
             // 输入区域
             VStack(alignment: .leading, spacing: 0) {
-                // 标题栏
-                HStack {
+            // 标题栏
+            HStack {
                     Text("输入文本")
                         .font(.headline)
                         .foregroundStyle(.secondary)
                     
-                    Spacer()
-                    
+                Spacer()
+                
                     // 实时字符计数
                     Text("\(stats.characterCount) 字符")
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
-                    
-                    Divider()
+            
+            Divider()
                         .frame(height: 12)
                         .padding(.horizontal, 8)
                     
@@ -56,15 +56,15 @@ struct CharacterCountView: View {
                         .scrollContentBackground(.hidden)
                         .padding(12)
                     
-                    if inputText.isEmpty {
-                        Text("在此输入或粘贴文本...")
+                            if inputText.isEmpty {
+                                Text("在此输入或粘贴文本...")
                             .font(.body)
-                            .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.tertiary)
                             .padding(12)
                             .padding(.top, 8)
-                            .allowsHitTesting(false)
-                    }
-                }
+                                    .allowsHitTesting(false)
+                            }
+                        }
                 .frame(minHeight: 120, maxHeight: 200)
                 .background(Color(nsColor: .textBackgroundColor))
             }
@@ -121,7 +121,7 @@ struct CharacterCountView: View {
                             StatCard(title: "UTF-16 字节", value: stats.byteCountUTF16, icon: "memorychip.fill", color: .teal)
                         }
                     }
-                }
+                        }
                 .padding(20)
             }
         }

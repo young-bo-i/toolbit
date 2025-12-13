@@ -34,6 +34,7 @@
 		A1000019238F0002 /* AppLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002B238F0001 /* AppLogoView.swift */; };
 		A100001A238F0002 /* IconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002C238F0001 /* IconGenerator.swift */; };
 		A100001B238F0002 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002D238F0001 /* WindowAccessor.swift */; };
+		A100001C238F0002 /* UpdateBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002E238F0001 /* UpdateBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,6 +67,7 @@
 		A100002B238F0001 /* AppLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogoView.swift; sourceTree = "<group>"; };
 		A100002C238F0001 /* IconGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconGenerator.swift; sourceTree = "<group>"; };
 		A100002D238F0001 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
+		A100002E238F0001 /* UpdateBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +141,7 @@
 			children = (
 				A1000023238F0001 /* CodeEditor.swift */,
 				A100002B238F0001 /* AppLogoView.swift */,
+				A100002E238F0001 /* UpdateBanner.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 				A1000019238F0002 /* AppLogoView.swift in Sources */,
 				A100001A238F0002 /* IconGenerator.swift in Sources */,
 				A100001B238F0002 /* WindowAccessor.swift in Sources */,
+				A100001C238F0002 /* UpdateBanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

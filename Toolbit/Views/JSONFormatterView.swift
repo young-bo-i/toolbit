@@ -11,12 +11,12 @@ struct JSONFormatterView: View {
     @State private var debounceTask: Task<Void, Never>?
     
     var body: some View {
-        HStack(spacing: 16) {
+            HStack(spacing: 16) {
             // 左侧：输入
-            inputPanel
-            
+                inputPanel
+                
             // 右侧：输出
-            outputPanel
+                outputPanel
         }
         .padding(20)
         .onAppear {
@@ -66,13 +66,13 @@ struct JSONFormatterView: View {
                     }
                     .help("粘贴")
                     
-                    Button(action: compressJSON) {
+                        Button(action: compressJSON) {
                         Image(systemName: "arrow.down.right.and.arrow.up.left")
-                    }
+                        }
                     .disabled(inputText.isEmpty)
                     .help("压缩 JSON")
-                    
-                    Button(action: { inputText = "" }) {
+                        
+                        Button(action: { inputText = "" }) {
                         Image(systemName: "xmark.circle")
                     }
                     .disabled(inputText.isEmpty)
@@ -106,7 +106,7 @@ struct JSONFormatterView: View {
                         .foregroundStyle(.orange)
                     Text(error)
                 }
-                .font(.caption)
+                        .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -146,7 +146,7 @@ struct JSONFormatterView: View {
                     
                     Toggle("排序键", isOn: $sortKeys)
                         .toggleStyle(.checkbox)
-                        .controlSize(.small)
+                    .controlSize(.small)
                 }
                 
                 Divider()
@@ -179,15 +179,15 @@ struct JSONFormatterView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                 } else {
-                    Text(outputText)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
+                        Text(outputText)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                    }
                 }
-            }
             .background(Color(nsColor: .textBackgroundColor))
-        }
+            }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay {
             RoundedRectangle(cornerRadius: 10)

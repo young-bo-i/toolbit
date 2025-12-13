@@ -2,17 +2,23 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var selectedTool: ToolType
-    @State private var searchText: String = ""
+    var searchText: String = ""  // 从顶部工具栏传入的搜索文本
+    @State private var localSearchText: String = ""  // 本地搜索栏的文本
     @State private var hoveredTool: ToolType?
+    
+    /// 合并的搜索文本（优先使用顶部工具栏的搜索）
+    private var effectiveSearchText: String {
+        searchText.isEmpty ? localSearchText : searchText
+    }
     
     private var filteredTools: [ToolType] {
         let tools = ToolType.allTools
-        if searchText.isEmpty {
+        if effectiveSearchText.isEmpty {
             return tools
         }
         return tools.filter {
-            $0.displayName.localizedCaseInsensitiveContains(searchText) ||
-            $0.subtitle.localizedCaseInsensitiveContains(searchText)
+            $0.displayName.localizedCaseInsensitiveContains(effectiveSearchText) ||
+            $0.subtitle.localizedCaseInsensitiveContains(effectiveSearchText)
         }
     }
     
@@ -110,12 +116,12 @@ struct HomeView: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.secondary)
             
-            TextField("搜索工具...", text: $searchText)
+            TextField("搜索工具...", text: $localSearchText)
                 .textFieldStyle(.plain)
                 .font(.body)
             
-            if !searchText.isEmpty {
-                Button(action: { searchText = "" }) {
+            if !effectiveSearchText.isEmpty {
+                Button(action: { localSearchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
                 }

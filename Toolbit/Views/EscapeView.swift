@@ -17,7 +17,7 @@ struct EscapeView: View {
         VStack(spacing: 16) {
             // 输入区域
             VStack(alignment: .leading, spacing: 0) {
-                // 标题栏
+            // 标题栏
                 HStack {
                     Text("输入文本")
                         .font(.headline)
@@ -29,8 +29,8 @@ struct EscapeView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
-                    
-                    Divider()
+            
+            Divider()
                         .frame(height: 12)
                         .padding(.horizontal, 8)
                     
@@ -80,10 +80,10 @@ struct EscapeView: View {
             }
             
             // 结果区域 - 左右两栏
-            HStack(spacing: 16) {
-                // 转义结果
+                HStack(spacing: 16) {
+                    // 转义结果
                 resultPanel(
-                    title: "转义结果",
+                        title: "转义结果",
                     subtitle: "Escape",
                     content: escapedText,
                     icon: "arrow.right.square",
@@ -93,11 +93,11 @@ struct EscapeView: View {
                         copyToClipboard(escapedText)
                         showCopied(.escaped)
                     }
-                )
-                
-                // 反转义结果
+                    )
+                    
+                    // 反转义结果
                 resultPanel(
-                    title: "反转义结果",
+                        title: "反转义结果",
                     subtitle: "Unescape",
                     content: unescapedText,
                     icon: "arrow.left.square",
@@ -107,9 +107,9 @@ struct EscapeView: View {
                         copyToClipboard(unescapedText)
                         showCopied(.unescaped)
                     }
-                )
+                    )
+                }
             }
-        }
         .padding(20)
         .onAppear {
             if !hasInitialized {
@@ -166,8 +166,8 @@ struct EscapeView: View {
                             Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                             if isCopied {
                                 Text("已复制")
-                            }
-                        }
+                }
+            }
                         .font(.caption)
                         .foregroundStyle(isCopied ? .green : .secondary)
                     }
@@ -189,14 +189,14 @@ struct EscapeView: View {
                         .padding(12)
                 } else {
                     Text(content)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                    }
                 }
-            }
             .background(Color(nsColor: .textBackgroundColor))
-        }
+            }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay {
             RoundedRectangle(cornerRadius: 10)
