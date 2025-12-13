@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var searchText: String = ""
     @StateObject private var updateManager = UpdateManager.shared
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -23,6 +24,17 @@ struct ContentView: View {
                     }
                 }
                 .toolbar {
+                    // 设置按钮（放在展开收起按钮右边）
+                    ToolbarItem(placement: .navigation) {
+                        Button(action: {
+                            openSettings()
+                        }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 13))
+                        }
+                        .help("设置 (⌘,)")
+                    }
+                    
                     // 占位符（把搜索框推到右边）
                     ToolbarItem(placement: .principal) {
                         Spacer()

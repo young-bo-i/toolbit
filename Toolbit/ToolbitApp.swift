@@ -94,8 +94,30 @@ struct SettingsView: View {
     @ObservedObject var languageManager = LanguageManager.shared
     
     var body: some View {
+        TabView {
+            // 通用设置
+            GeneralSettingsView()
+                .tabItem {
+                    Label("通用", systemImage: "gearshape")
+                }
+            
+            // 更新设置
+            UpdateSettingsView()
+                .tabItem {
+                    Label("更新", systemImage: "arrow.triangle.2.circlepath")
+                }
+        }
+        .frame(width: 500, height: 350)
+    }
+}
+
+// MARK: - 通用设置
+struct GeneralSettingsView: View {
+    @ObservedObject var languageManager = LanguageManager.shared
+    
+    var body: some View {
         Form {
-            Section(L10n.settingsLanguageTitle) {
+            Section {
                 Picker(L10n.settingsLanguage, selection: $languageManager.currentLanguage) {
                     ForEach(AppLanguage.allCases) { language in
                         Text(language.displayName).tag(language)
@@ -104,20 +126,64 @@ struct SettingsView: View {
                 .onChange(of: languageManager.currentLanguage) { _, _ in
                     languageManager.setLanguage(languageManager.currentLanguage)
                 }
-                
+            } header: {
+                Text(L10n.settingsLanguageTitle)
+            } footer: {
                 Text(L10n.settingsRestartHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
-            Section(L10n.settingsUpdate) {
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - 更新设置
+struct UpdateSettingsView: View {
+    @ObservedObject var updateManager = UpdateManager.shared
+    
+    var body: some View {
+        Form {
+            Section {
                 Toggle(L10n.settingsAutoCheck, isOn: Binding(
                     get: { updateManager.autoCheckEnabled },
                     set: { updateManager.setAutoCheck($0) }
                 ))
+                
+                HStack {
+                    Text("当前版本")
+                    Spacer()
+                    Text("v\(updateManager.currentVersion)")
+                        .foregroundStyle(.secondary)
+                }
+                
+                if let lastCheck = updateManager.lastCheckDate {
+                    HStack {
+                        Text("上次检查")
+                        Spacer()
+                        Text(lastCheck.formatted(date: .abbreviated, time: .shortened))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text(L10n.settingsUpdate)
+            }
+            
+            Section {
+                Button("立即检查更新") {
+                    Task {
+                        await updateManager.manualCheckForUpdates()
+                    }
+                }
+                .disabled(updateManager.isManualChecking)
+                
+                Button("访问 GitHub") {
+                    updateManager.openHomePage()
+                }
             }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 200)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
