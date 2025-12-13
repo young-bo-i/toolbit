@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15  # 使用最新的 macOS runner (Sequoia)
+    runs-on: macos-26  # 使用最新的 macOS Tahoe runner (ARM64)
     
     steps:
     - name: Checkout code
