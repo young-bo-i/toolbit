@@ -2,10 +2,11 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTool: ToolType = .home
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @Environment(\.openWindow) private var openWindow
     
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             // 侧边栏
             SidebarView(selectedTool: $selectedTool)
         } detail: {
@@ -31,12 +32,15 @@ struct ContentView: View {
                 }
             }
         }
+        .navigationSplitViewStyle(.prominentDetail) // detail 优先，减少布局震荡
         // MARK: - 自定义顶部工具栏（无边框标题 + 有边框按钮）
         // 使用方法：.customToolbar(title: "标题文案") { /* 按钮点击事件 */ }
         // .customToolbar(title: "测试文案") {
         //     openWindow(id: "about")
         // }
-        .frame(minWidth: 1000, minHeight: 650)
+        // 不设置 minWidth，避免边界震荡
+        // 使用 idealWidth 作为默认尺寸
+        .frame(idealWidth: 1200, minHeight: 650)
     }
     
     // MARK: - 主内容

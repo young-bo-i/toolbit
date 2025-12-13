@@ -35,7 +35,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .frame(minWidth: 200, maxWidth: 260)
+        .frame(width: 220) // 固定宽度
         .onChange(of: selectedTool) { _, newValue in
             // 选中工具时展开对应分类（首页除外）
             if newValue != .home && !expandedCategories.contains(newValue.category) {

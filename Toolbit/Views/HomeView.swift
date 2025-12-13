@@ -48,7 +48,7 @@ struct HomeView: View {
     // MARK: - Hero 区域
     private var heroSection: some View {
         ZStack {
-            // 渐变背景
+            // 渐变背景 - 使用固定尺寸避免重新计算
             LinearGradient(
                 colors: [
                     Color.blue.opacity(0.15),
@@ -58,19 +58,20 @@ struct HomeView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .frame(height: 200)
             
-            // 装饰性圆形
-            GeometryReader { geo in
-                Circle()
-                    .fill(Color.blue.opacity(0.08))
-                    .frame(width: 300, height: 300)
-                    .offset(x: geo.size.width - 200, y: -100)
-                
+            // 装饰性圆形 - 使用固定位置避免 GeometryReader
+            HStack {
                 Circle()
                     .fill(Color.purple.opacity(0.06))
                     .frame(width: 200, height: 200)
-                    .offset(x: -50, y: 50)
+                    .offset(x: -100, y: 50)
+                
+                Spacer()
+                
+                Circle()
+                    .fill(Color.blue.opacity(0.08))
+                    .frame(width: 300, height: 300)
+                    .offset(x: 100, y: -100)
             }
             
             VStack(spacing: 12) {
@@ -99,6 +100,7 @@ struct HomeView: View {
             .padding(.top, 40)
         }
         .frame(height: 200)
+        .clipped() // 裁剪超出部分
     }
     
     // MARK: - 搜索栏
@@ -152,11 +154,9 @@ struct HomeView: View {
                             .foregroundStyle(.tertiary)
                     }
                     
-                    // 工具卡片网格
+                    // 工具卡片网格 - 使用固定3列，无最小宽度限制
                     LazyVGrid(
-                        columns: [
-                            GridItem(.adaptive(minimum: 200, maximum: 280), spacing: 16)
-                        ],
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3),
                         spacing: 16
                     ) {
                         ForEach(group.tools) { tool in
@@ -166,7 +166,10 @@ struct HomeView: View {
                                 action: { selectedTool = tool }
                             )
                             .onHover { isHovered in
-                                withAnimation(.easeOut(duration: 0.15)) {
+                                // 使用 transaction 避免与 NavigationSplitView 动画冲突
+                                var transaction = Transaction()
+                                transaction.disablesAnimations = false
+                                withTransaction(transaction) {
                                     hoveredTool = isHovered ? tool : nil
                                 }
                             }
@@ -280,8 +283,10 @@ struct ToolCard: View {
                 radius: 8,
                 y: 4
             )
+            .animation(.easeOut(duration: 0.15), value: isHovered)
         }
         .buttonStyle(.plain)
+        .drawingGroup() // 优化渲染性能
     }
 }
 
