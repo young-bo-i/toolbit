@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14  # 使用 Apple Silicon runner
+    runs-on: macos-15  # 使用最新的 macOS runner (Sequoia)
     
     steps:
     - name: Checkout code
