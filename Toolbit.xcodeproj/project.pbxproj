@@ -35,6 +35,7 @@
 		A100001A238F0002 /* IconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002C238F0001 /* IconGenerator.swift */; };
 		A100001B238F0002 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002D238F0001 /* WindowAccessor.swift */; };
 		A100001C238F0002 /* UpdateBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002E238F0001 /* UpdateBanner.swift */; };
+		A100001D238F0002 /* AIConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002F238F0001 /* AIConfigManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +69,7 @@
 		A100002C238F0001 /* IconGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconGenerator.swift; sourceTree = "<group>"; };
 		A100002D238F0001 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 		A100002E238F0001 /* UpdateBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBanner.swift; sourceTree = "<group>"; };
+		A100002F238F0001 /* AIConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConfigManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +171,7 @@
 			children = (
 				A1000027238F0001 /* UpdateManager.swift */,
 				A1000029238F0001 /* LanguageManager.swift */,
+				A100002F238F0001 /* AIConfigManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 				A100001A238F0002 /* IconGenerator.swift in Sources */,
 				A100001B238F0002 /* WindowAccessor.swift in Sources */,
 				A100001C238F0002 /* UpdateBanner.swift in Sources */,
+				A100001D238F0002 /* AIConfigManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

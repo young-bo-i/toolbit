@@ -101,13 +101,19 @@ struct SettingsView: View {
                     Label("通用", systemImage: "gearshape")
                 }
             
+            // AI 设置
+            AISettingsView()
+                .tabItem {
+                    Label("AI 模型", systemImage: "brain")
+                }
+            
             // 更新设置
             UpdateSettingsView()
                 .tabItem {
                     Label("更新", systemImage: "arrow.triangle.2.circlepath")
                 }
         }
-        .frame(width: 500, height: 350)
+        .frame(width: 550, height: 450)
     }
 }
 
@@ -132,6 +138,126 @@ struct GeneralSettingsView: View {
                 Text(L10n.settingsRestartHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - AI 设置
+struct AISettingsView: View {
+    @StateObject var aiConfig = AIConfigManager.shared
+    @State private var showApiKey = false
+    @State private var testResult: String?
+    @State private var isTesting = false
+    
+    var body: some View {
+        Form {
+            // 启用开关
+            Section {
+                Toggle("启用 AI 功能", isOn: $aiConfig.isEnabled)
+            } header: {
+                Text("AI 功能")
+            } footer: {
+                Text("启用后，部分工具将支持 AI 辅助功能")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            // 模型配置
+            Section {
+                // 预设模型选择
+                Picker("预设模型", selection: Binding(
+                    get: { 
+                        AIConfigManager.PresetModel.presets.first { $0.id == aiConfig.modelId } 
+                            ?? AIConfigManager.PresetModel.presets.last!
+                    },
+                    set: { preset in
+                        aiConfig.applyPreset(preset)
+                    }
+                )) {
+                    ForEach(AIConfigManager.PresetModel.presets) { preset in
+                        Text(preset.name).tag(preset)
+                    }
+                }
+                
+                // API 端点
+                TextField("API 端点", text: $aiConfig.endpoint, prompt: Text("https://api.openai.com/v1"))
+                    .textFieldStyle(.roundedBorder)
+                
+                // 模型编码
+                TextField("模型编码", text: $aiConfig.modelId, prompt: Text("gpt-4"))
+                    .textFieldStyle(.roundedBorder)
+                
+                // API 密钥
+                HStack {
+                    if showApiKey {
+                        TextField("API 密钥", text: $aiConfig.apiKey, prompt: Text("sk-..."))
+                            .textFieldStyle(.roundedBorder)
+                    } else {
+                        SecureField("API 密钥", text: $aiConfig.apiKey, prompt: Text("sk-..."))
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    Button(action: { showApiKey.toggle() }) {
+                        Image(systemName: showApiKey ? "eye.slash" : "eye")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } header: {
+                Text("模型配置")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("配置数据保存在本地，更新应用后不会丢失")
+                    if !aiConfig.isConfigured {
+                        Text("⚠️ 请填写完整的配置信息")
+                            .foregroundStyle(.orange)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            
+            // 操作按钮
+            Section {
+                HStack {
+                    Button("测试连接") {
+                        Task {
+                            isTesting = true
+                            testResult = nil
+                            let result = await aiConfig.testConnection()
+                            switch result {
+                            case .success(let message):
+                                testResult = "✅ \(message)"
+                            case .failure(let error):
+                                testResult = "❌ \(error.localizedDescription)"
+                            }
+                            isTesting = false
+                        }
+                    }
+                    .disabled(!aiConfig.isConfigured || isTesting)
+                    
+                    if isTesting {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .padding(.leading, 8)
+                    }
+                    
+                    if let result = testResult {
+                        Text(result)
+                            .font(.caption)
+                            .padding(.leading, 8)
+                    }
+                    
+                    Spacer()
+                    
+                    Button("重置配置", role: .destructive) {
+                        aiConfig.reset()
+                        testResult = nil
+                    }
+                }
             }
         }
         .formStyle(.grouped)
