@@ -14,13 +14,23 @@ struct EscapeView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.escape.displayName,
+                subtitle: ToolType.escape.subtitle,
+                icon: ToolType.escape.icon,
+                color: ToolType.escape.color
+            )
+            
+            VStack(spacing: 16) {
             // 输入区域
             VStack(alignment: .leading, spacing: 0) {
-            // 标题栏
+                // 标题栏
                 HStack {
                     Text("输入文本")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
                     
                     Spacer()
@@ -29,29 +39,19 @@ struct EscapeView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
-            
-            Divider()
-                        .frame(height: 12)
-                        .padding(.horizontal, 8)
                     
-                    HStack(spacing: 4) {
-                        Button(action: pasteInput) {
-                            Image(systemName: "doc.on.clipboard")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("粘贴")
-                        
-                        Button(action: { inputText = "" }) {
-                            Image(systemName: "xmark.circle")
-                        }
-                        .buttonStyle(.borderless)
-                        .disabled(inputText.isEmpty)
-                        .help("清空")
+                    HStack(spacing: 2) {
+                        GlassToolButton(icon: "doc.on.clipboard", action: pasteInput, help: "粘贴")
+                        GlassToolButton(icon: "xmark.circle", action: { inputText = "" }, isDisabled: inputText.isEmpty, help: "清空")
                     }
-                    .foregroundStyle(.secondary)
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.ultraThinMaterial)
+                    )
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(Color(nsColor: .windowBackgroundColor))
                 
                 // 文本输入
@@ -59,14 +59,15 @@ struct EscapeView: View {
                     TextEditor(text: $inputText)
                         .font(.system(.body, design: .monospaced))
                         .scrollContentBackground(.hidden)
-                        .padding(12)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                     
                     if inputText.isEmpty {
                         Text("输入需要转义或反转义的文本...")
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.tertiary)
-                            .padding(12)
-                            .padding(.top, 8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
                             .allowsHitTesting(false)
                     }
                 }
@@ -110,7 +111,8 @@ struct EscapeView: View {
                     )
                 }
             }
-        .padding(20)
+            .padding(20)
+        }
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -176,7 +178,7 @@ struct EscapeView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 内容区

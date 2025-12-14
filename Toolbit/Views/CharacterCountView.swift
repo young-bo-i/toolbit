@@ -9,74 +9,74 @@ struct CharacterCountView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 输入区域
-            VStack(alignment: .leading, spacing: 0) {
-            // 标题栏
-            HStack {
-                    Text("输入文本")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    
-                Spacer()
-                
-                    // 实时字符计数
-                    Text("\(stats.characterCount) 字符")
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                        .monospacedDigit()
+            // 页面标题
+            PageHeader(
+                title: ToolType.characterCount.displayName,
+                subtitle: ToolType.characterCount.subtitle,
+                icon: ToolType.characterCount.icon,
+                color: ToolType.characterCount.color
+            )
             
-            Divider()
-                        .frame(height: 12)
-                        .padding(.horizontal, 8)
-                    
-                    HStack(spacing: 4) {
-                        Button(action: pasteText) {
-                            Image(systemName: "doc.on.clipboard")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("粘贴")
+            // 内容区域
+            VStack(spacing: 16) {
+                // 输入区域
+                VStack(alignment: .leading, spacing: 0) {
+                    // 标题栏
+                    HStack {
+                        Text("输入文本")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
                         
-                        Button(action: { inputText = "" }) {
-                            Image(systemName: "xmark.circle")
+                        Spacer()
+                        
+                        // 实时字符计数
+                        Text("\(stats.characterCount) 字符")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .monospacedDigit()
+                        
+                        HStack(spacing: 2) {
+                            GlassToolButton(icon: "doc.on.clipboard", action: pasteText, help: "粘贴")
+                            GlassToolButton(icon: "xmark.circle", action: { inputText = "" }, isDisabled: inputText.isEmpty, help: "清空")
                         }
-                        .buttonStyle(.borderless)
-                        .disabled(inputText.isEmpty)
-                        .help("清空")
+                        .padding(4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.ultraThinMaterial)
+                        )
                     }
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color(nsColor: .windowBackgroundColor))
-                
-                // 文本输入框
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $inputText)
-                        .font(.body)
-                        .scrollContentBackground(.hidden)
-                        .padding(12)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(nsColor: .windowBackgroundColor))
                     
-                            if inputText.isEmpty {
-                                Text("在此输入或粘贴文本...")
+                    // 文本输入框
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $inputText)
                             .font(.body)
-                                    .foregroundStyle(.tertiary)
-                            .padding(12)
-                            .padding(.top, 8)
-                                    .allowsHitTesting(false)
-                            }
+                            .scrollContentBackground(.hidden)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                        
+                        if inputText.isEmpty {
+                            Text("在此输入或粘贴文本...")
+                                .font(.body)
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .allowsHitTesting(false)
                         }
-                .frame(minHeight: 120, maxHeight: 200)
-                .background(Color(nsColor: .textBackgroundColor))
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
-            
-            // 统计结果区域
+                    }
+                    .frame(minHeight: 120, maxHeight: 200)
+                    .background(Color(nsColor: .textBackgroundColor))
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+                }
+                
+                // 统计结果区域
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // 主要统计
@@ -121,9 +121,10 @@ struct CharacterCountView: View {
                             StatCard(title: "UTF-16 字节", value: stats.byteCountUTF16, icon: "memorychip.fill", color: .teal)
                         }
                     }
-                        }
-                .padding(20)
+                }
             }
+            }
+            .padding(20)
         }
         .onDisappear {
             inputText = ""

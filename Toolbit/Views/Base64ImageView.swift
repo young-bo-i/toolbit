@@ -25,14 +25,24 @@ struct Base64ImageView: View {
     ]
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：图片区域
-            imagePanel
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.base64Image.displayName,
+                subtitle: ToolType.base64Image.subtitle,
+                icon: ToolType.base64Image.icon,
+                color: ToolType.base64Image.color
+            )
             
-            // 右侧：Base64 文本区域
-            base64Panel
+            HStack(spacing: 16) {
+                // 左侧：图片区域
+                imagePanel
+                
+                // 右侧：Base64 文本区域
+                base64Panel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -166,7 +176,7 @@ struct Base64ImageView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 图片显示区
@@ -236,11 +246,10 @@ struct Base64ImageView: View {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Image(systemName: "text.alignleft")
-                    .foregroundStyle(.green)
                 Text("Base64 编码")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -249,39 +258,20 @@ struct Base64ImageView: View {
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
                 
-                Divider()
-                    .frame(height: 12)
-                    .padding(.horizontal, 6)
-                
-                HStack(spacing: 4) {
-                    Button(action: pasteBase64) {
-                        Image(systemName: "doc.on.clipboard")
-                    }
-                    .help("粘贴 Base64")
-                    
-                    Button(action: copyBase64) {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .disabled(base64Text.isEmpty)
-                    .help("复制")
-                    
-                    Button(action: saveBase64) {
-                        Image(systemName: "square.and.arrow.down")
-                    }
-                    .disabled(base64Text.isEmpty)
-                    .help("保存")
-                    
-                    Button(action: clearBase64) {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .disabled(base64Text.isEmpty)
-                    .help("清空")
+                HStack(spacing: 2) {
+                    GlassToolButton(icon: "doc.on.clipboard", action: pasteBase64, help: "粘贴 Base64")
+                    GlassToolButton(icon: "doc.on.doc", action: copyBase64, isDisabled: base64Text.isEmpty, help: "复制")
+                    GlassToolButton(icon: "square.and.arrow.down", action: saveBase64, isDisabled: base64Text.isEmpty, help: "保存")
+                    GlassToolButton(icon: "xmark.circle", action: clearBase64, isDisabled: base64Text.isEmpty, help: "清空")
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // Base64 文本显示

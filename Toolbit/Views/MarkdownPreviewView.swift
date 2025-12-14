@@ -72,14 +72,24 @@ func hello() {
 """
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：Markdown 输入
-            inputPanel
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.markdownPreview.displayName,
+                subtitle: ToolType.markdownPreview.subtitle,
+                icon: ToolType.markdownPreview.icon,
+                color: ToolType.markdownPreview.color
+            )
             
-            // 右侧：预览
-            previewPanel
+            HStack(spacing: 16) {
+                // 左侧：Markdown 输入
+                inputPanel
+                
+                // 右侧：预览
+                previewPanel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -97,11 +107,10 @@ func hello() {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Image(systemName: "doc.text")
-                    .foregroundStyle(.orange)
                 Text("Markdown")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -110,38 +119,20 @@ func hello() {
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
                 
-                Divider()
-                    .frame(height: 12)
-                    .padding(.horizontal, 6)
-                
-                HStack(spacing: 4) {
-                    Button(action: loadSample) {
-                        Image(systemName: "doc.badge.plus")
-                    }
-                    .help("加载示例")
-                    
-                    Button(action: pasteInput) {
-                        Image(systemName: "doc.on.clipboard")
-                    }
-                    .help("粘贴")
-                    
-                    Button(action: copyInput) {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .disabled(inputText.isEmpty)
-                    .help("复制")
-                    
-                    Button(action: { inputText = "" }) {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .disabled(inputText.isEmpty)
-                    .help("清空")
+                HStack(spacing: 2) {
+                    GlassToolButton(icon: "doc.badge.plus", action: loadSample, help: "加载示例")
+                    GlassToolButton(icon: "doc.on.clipboard", action: pasteInput, help: "粘贴")
+                    GlassToolButton(icon: "doc.on.doc", action: copyInput, isDisabled: inputText.isEmpty, help: "复制")
+                    GlassToolButton(icon: "xmark.circle", action: { inputText = "" }, isDisabled: inputText.isEmpty, help: "清空")
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 编辑区
@@ -191,7 +182,7 @@ func hello() {
                 .help("导出 HTML")
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 预览区

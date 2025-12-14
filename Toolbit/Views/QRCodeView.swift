@@ -12,14 +12,24 @@ struct QRCodeView: View {
     @State private var debounceTask: Task<Void, Never>?
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：文本输入
-            textPanel
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.qrCode.displayName,
+                subtitle: ToolType.qrCode.subtitle,
+                icon: ToolType.qrCode.icon,
+                color: ToolType.qrCode.color
+            )
             
-            // 右侧：二维码
-            qrCodePanel
+            HStack(spacing: 16) {
+                // 左侧：文本输入
+                textPanel
+                
+                // 右侧：二维码
+                qrCodePanel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -47,11 +57,10 @@ struct QRCodeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // 标题栏
                 HStack {
-                    Image(systemName: "text.alignleft")
-                        .foregroundStyle(.blue)
                     Text("文本内容")
                         .font(.subheadline)
                         .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
                     
                     Spacer()
                     
@@ -60,33 +69,19 @@ struct QRCodeView: View {
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
                     
-                    Divider()
-                        .frame(height: 12)
-                        .padding(.horizontal, 6)
-                    
-                    HStack(spacing: 4) {
-                        Button(action: pasteText) {
-                            Image(systemName: "doc.on.clipboard")
-                        }
-                        .help("粘贴")
-                        
-                        Button(action: copyText) {
-                            Image(systemName: "doc.on.doc")
-                        }
-                        .disabled(inputText.isEmpty)
-                        .help("复制")
-                        
-                        Button(action: { inputText = "" }) {
-                            Image(systemName: "xmark.circle")
-                        }
-                        .disabled(inputText.isEmpty)
-                        .help("清空")
+                    HStack(spacing: 2) {
+                        GlassToolButton(icon: "doc.on.clipboard", action: pasteText, help: "粘贴")
+                        GlassToolButton(icon: "doc.on.doc", action: copyText, isDisabled: inputText.isEmpty, help: "复制")
+                        GlassToolButton(icon: "xmark.circle", action: { inputText = "" }, isDisabled: inputText.isEmpty, help: "清空")
                     }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.ultraThinMaterial)
+                    )
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
                 .background(Color(nsColor: .windowBackgroundColor))
                 
                 // 文本输入
@@ -94,14 +89,15 @@ struct QRCodeView: View {
                     TextEditor(text: $inputText)
                         .font(.body)
                         .scrollContentBackground(.hidden)
-                        .padding(12)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                     
                     if inputText.isEmpty {
                         Text("输入文本自动生成二维码...")
                             .font(.body)
                             .foregroundStyle(.tertiary)
-                            .padding(12)
-                            .padding(.top, 8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
                             .allowsHitTesting(false)
                     }
                 }
@@ -145,7 +141,7 @@ struct QRCodeView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 8)
                     .background(Color(nsColor: .windowBackgroundColor))
                     
                     ScrollView {
@@ -214,7 +210,7 @@ struct QRCodeView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 二维码显示区

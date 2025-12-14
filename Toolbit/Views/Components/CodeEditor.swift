@@ -1,6 +1,112 @@
 import SwiftUI
 import AppKit
 
+// MARK: - 页面标题组件
+struct PageHeader: View {
+    let title: String
+    let subtitle: String?
+    
+    init(title: String, subtitle: String? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+    }
+    
+    // 兼容旧的初始化方法（忽略 icon 和 color 参数）
+    init(title: String, subtitle: String? = nil, icon: String, color: Color = .accentColor) {
+        self.title = title
+        self.subtitle = subtitle
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 标题
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+}
+
+// MARK: - 液态玻璃效果工具按钮
+struct GlassToolButton: View {
+    let icon: String
+    let action: () -> Void
+    var isDisabled: Bool = false
+    var help: String = ""
+    
+    @State private var isHovered = false
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(isDisabled ? .tertiary : (isHovered ? .primary : .secondary))
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isHovered ? Color.primary.opacity(0.1) : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isHovered ? Color.primary.opacity(0.15) : Color.clear, lineWidth: 0.5)
+                )
+                .scaleEffect(isPressed ? 0.92 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .help(help)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.easeOut(duration: 0.1)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.easeOut(duration: 0.1)) {
+                        isPressed = false
+                    }
+                }
+        )
+    }
+}
+
+// MARK: - 液态玻璃效果工具按钮组
+struct GlassToolButtonGroup: View {
+    var body: some View {
+        HStack(spacing: 2) {
+            // 子视图通过 ViewBuilder 传入
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+        )
+    }
+}
+
 // MARK: - 统一样式常量
 struct AppStyle {
     static let panelPadding: CGFloat = 16

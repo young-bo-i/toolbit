@@ -14,14 +14,24 @@ struct SVGConverterView: View {
     @State private var debounceTask: Task<Void, Never>?
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：SVG 代码
-            svgPanel
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.svgConverter.displayName,
+                subtitle: ToolType.svgConverter.subtitle,
+                icon: ToolType.svgConverter.icon,
+                color: ToolType.svgConverter.color
+            )
             
-            // 右侧：图片预览
-            imagePanel
+            HStack(spacing: 16) {
+                // 左侧：SVG 代码
+                svgPanel
+                
+                // 右侧：图片预览
+                imagePanel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -51,11 +61,10 @@ struct SVGConverterView: View {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .foregroundStyle(.orange)
                 Text("SVG 代码")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -64,38 +73,20 @@ struct SVGConverterView: View {
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
                 
-                Divider()
-                    .frame(height: 12)
-                    .padding(.horizontal, 6)
-                
-                HStack(spacing: 4) {
-                    Button(action: pasteSVG) {
-                        Image(systemName: "doc.on.clipboard")
-                    }
-                    .help("粘贴")
-                    
-                    Button(action: selectSVGFile) {
-                        Image(systemName: "folder")
-                    }
-                    .help("选择文件")
-                    
-                    Button(action: copySVG) {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .disabled(svgText.isEmpty)
-                    .help("复制")
-                    
-                    Button(action: { svgText = "" }) {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .disabled(svgText.isEmpty)
-                    .help("清空")
+                HStack(spacing: 2) {
+                    GlassToolButton(icon: "doc.on.clipboard", action: pasteSVG, help: "粘贴")
+                    GlassToolButton(icon: "folder", action: selectSVGFile, help: "选择文件")
+                    GlassToolButton(icon: "doc.on.doc", action: copySVG, isDisabled: svgText.isEmpty, help: "复制")
+                    GlassToolButton(icon: "xmark.circle", action: { svgText = "" }, isDisabled: svgText.isEmpty, help: "清空")
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // SVG 代码编辑区
@@ -183,7 +174,7 @@ struct SVGConverterView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 图片显示区

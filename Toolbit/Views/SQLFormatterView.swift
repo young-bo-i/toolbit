@@ -35,14 +35,24 @@ struct SQLFormatterView: View {
     ]
     
     var body: some View {
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.sqlFormatter.displayName,
+                subtitle: ToolType.sqlFormatter.subtitle,
+                icon: ToolType.sqlFormatter.icon,
+                color: ToolType.sqlFormatter.color
+            )
+            
             HStack(spacing: 16) {
-            // 左侧：输入
+                // 左侧：输入
                 inputPanel
                 
-            // 右侧：输出
+                // 右侧：输出
                 outputPanel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -67,11 +77,10 @@ struct SQLFormatterView: View {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Image(systemName: "tablecells")
-                    .foregroundStyle(.purple)
                 Text("输入 SQL")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -80,33 +89,19 @@ struct SQLFormatterView: View {
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
                 
-                Divider()
-                    .frame(height: 12)
-                    .padding(.horizontal, 6)
-                
-                HStack(spacing: 4) {
-                    Button(action: pasteInput) {
-                        Image(systemName: "doc.on.clipboard")
-                    }
-                    .help("粘贴")
-                    
-                        Button(action: compressSQL) {
-                        Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        }
-                    .disabled(inputText.isEmpty)
-                    .help("压缩 SQL")
-                        
-                        Button(action: { inputText = "" }) {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .disabled(inputText.isEmpty)
-                    .help("清空")
+                HStack(spacing: 2) {
+                    GlassToolButton(icon: "doc.on.clipboard", action: pasteInput, help: "粘贴")
+                    GlassToolButton(icon: "arrow.down.right.and.arrow.up.left", action: compressSQL, isDisabled: inputText.isEmpty, help: "压缩 SQL")
+                    GlassToolButton(icon: "xmark.circle", action: { inputText = "" }, isDisabled: inputText.isEmpty, help: "清空")
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 输入编辑器
@@ -180,7 +175,7 @@ struct SQLFormatterView: View {
                 .help("复制")
                 }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 输出显示

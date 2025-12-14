@@ -15,14 +15,24 @@ struct OCRView: View {
     @State private var isDropTargeted: Bool = false
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：图片
-            imagePanel
+        VStack(spacing: 0) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.ocr.displayName,
+                subtitle: ToolType.ocr.subtitle,
+                icon: ToolType.ocr.icon,
+                color: ToolType.ocr.color
+            )
             
-            // 右侧：识别结果
-            resultPanel
+            HStack(spacing: 16) {
+                // 左侧：图片
+                imagePanel
+                
+                // 右侧：识别结果
+                resultPanel
+            }
+            .padding(20)
         }
-        .padding(20)
         .onAppear {
             if !hasInitialized {
                 hasInitialized = true
@@ -88,7 +98,7 @@ struct OCRView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 图片显示区
@@ -170,11 +180,10 @@ struct OCRView: View {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Image(systemName: "text.viewfinder")
-                    .foregroundStyle(.green)
                 Text("识别结果")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
                 
@@ -183,28 +192,18 @@ struct OCRView: View {
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
                 
-                Divider()
-                    .frame(height: 12)
-                    .padding(.horizontal, 6)
-                
-                HStack(spacing: 4) {
-                    Button(action: copyResult) {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .disabled(recognizedText.isEmpty)
-                    .help("复制")
-                    
-                    Button(action: saveResult) {
-                        Image(systemName: "square.and.arrow.down")
-                    }
-                    .disabled(recognizedText.isEmpty)
-                    .help("保存")
+                HStack(spacing: 2) {
+                    GlassToolButton(icon: "doc.on.doc", action: copyResult, isDisabled: recognizedText.isEmpty, help: "复制")
+                    GlassToolButton(icon: "square.and.arrow.down", action: saveResult, isDisabled: recognizedText.isEmpty, help: "保存")
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .windowBackgroundColor))
             
             // 结果显示

@@ -22,8 +22,18 @@ struct StringDiffView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 输入区域 - 左右两栏
-            HStack(spacing: 1) {
+            // 页面标题
+            PageHeader(
+                title: ToolType.stringDiff.displayName,
+                subtitle: ToolType.stringDiff.subtitle,
+                icon: ToolType.stringDiff.icon,
+                color: ToolType.stringDiff.color
+            )
+            
+            // 内容区域
+            VStack(spacing: 12) {
+                // 输入区域 - 左右两栏
+                HStack(spacing: 1) {
                 // 左侧：原始文本
                 textInputPanel(
                     title: "原始文本",
@@ -52,11 +62,8 @@ struct StringDiffView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
-            
-            // 工具栏
-            HStack(spacing: 16) {
+                // 工具栏
+                HStack(spacing: 16) {
                 // 统计信息
                 if !diffResult.isEmpty {
                     HStack(spacing: 12) {
@@ -96,12 +103,10 @@ struct StringDiffView: View {
                     .disabled(leftText.isEmpty && rightText.isEmpty)
                     .help("清空全部")
                 }
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            
-            // 对比结果区域
+                    .foregroundStyle(.secondary)
+                }
+                
+                // 对比结果区域
             VStack(spacing: 0) {
                 if leftText.isEmpty && rightText.isEmpty {
                     // 空状态
@@ -143,8 +148,8 @@ struct StringDiffView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            }
+            .padding(20)
         }
         .onChange(of: leftText) { _, _ in triggerDebouncedDiff() }
         .onChange(of: rightText) { _, _ in triggerDebouncedDiff() }
@@ -200,14 +205,15 @@ struct StringDiffView: View {
                 TextEditor(text: text)
                     .font(.system(.body, design: .monospaced))
                     .scrollContentBackground(.hidden)
-                    .padding(8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 
                 if text.wrappedValue.isEmpty {
                     Text(placeholder)
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
-                        .padding(8)
-                        .padding(.top, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                         .allowsHitTesting(false)
                 }
             }
