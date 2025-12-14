@@ -21,14 +21,14 @@ struct SidebarView: View {
                         .tag(tool)
                     }
                 } label: {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: category.icon)
-                            .font(.caption)
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(.secondary)
-                            .frame(width: 16)
+                            .frame(width: 18)
                         
                         Text(category.displayName)
-                            .font(.headline)
+                            .font(.system(size: 13, weight: .medium))
                     }
                 }
                 .tint(.secondary)
