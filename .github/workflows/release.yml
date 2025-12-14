@@ -137,13 +137,24 @@ jobs:
                 open
                 update without registering applications
                 delay 2
+                close
             end tell
         end tell
         EOF
         
-        # 卸载并转换
+        # 等待 Finder 完全释放资源
+        sleep 3
+        
+        # 卸载并转换（带重试机制）
         sync
-        hdiutil detach "${MOUNT_DIR}"
+        for i in 1 2 3 4 5; do
+            if hdiutil detach "${MOUNT_DIR}" -force 2>/dev/null; then
+                echo "Successfully detached DMG on attempt $i"
+                break
+            fi
+            echo "Attempt $i to detach failed, waiting..."
+            sleep 2
+        done
         hdiutil convert "build/${APP_NAME}-temp.dmg" \
             -format UDZO \
             -imagekey zlib-level=9 \
