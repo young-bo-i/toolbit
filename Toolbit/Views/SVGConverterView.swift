@@ -280,17 +280,69 @@ struct SVGConverterView: View {
             
             // 尝试使用 NSImage 直接加载 SVG
             if let svgImage = NSImage(data: svgData) {
-                // 创建指定尺寸的图片
+                // 创建指定尺寸的位图
                 let targetSize = NSSize(width: scaledWidth, height: scaledHeight)
-                let resultImage = NSImage(size: targetSize)
                 
-                resultImage.lockFocus()
-                NSGraphicsContext.current?.imageInterpolation = .high
-                svgImage.draw(in: NSRect(origin: .zero, size: targetSize),
-                             from: NSRect(origin: .zero, size: svgImage.size),
-                             operation: .copy,
-                             fraction: 1.0)
-                resultImage.unlockFocus()
+                // 使用 NSBitmapImageRep 创建精确尺寸的位图
+                guard let bitmapRep = NSBitmapImageRep(
+                    bitmapDataPlanes: nil,
+                    pixelsWide: Int(scaledWidth),
+                    pixelsHigh: Int(scaledHeight),
+                    bitsPerSample: 8,
+                    samplesPerPixel: 4,
+                    hasAlpha: true,
+                    isPlanar: false,
+                    colorSpaceName: .deviceRGB,
+                    bytesPerRow: 0,
+                    bitsPerPixel: 0
+                ) else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "无法创建图片缓冲区"
+                        self.isProcessing = false
+                    }
+                    return
+                }
+                
+                // 设置位图尺寸（用于渲染）
+                bitmapRep.size = targetSize
+                
+                // 在位图上下文中绘制 SVG
+                NSGraphicsContext.saveGraphicsState()
+                let context = NSGraphicsContext(bitmapImageRep: bitmapRep)
+                NSGraphicsContext.current = context
+                context?.imageInterpolation = .high
+                
+                // 计算绘制区域，保持原始 SVG 的宽高比
+                let svgAspect = svgImage.size.width / svgImage.size.height
+                let targetAspect = scaledWidth / scaledHeight
+                
+                var drawRect = NSRect(origin: .zero, size: targetSize)
+                
+                if svgAspect > targetAspect {
+                    // SVG 更宽，以宽度为准
+                    let newHeight = scaledWidth / svgAspect
+                    drawRect.origin.y = (scaledHeight - newHeight) / 2
+                    drawRect.size.height = newHeight
+                } else {
+                    // SVG 更高，以高度为准
+                    let newWidth = scaledHeight * svgAspect
+                    drawRect.origin.x = (scaledWidth - newWidth) / 2
+                    drawRect.size.width = newWidth
+                }
+                
+                // 绘制 SVG（使用原始尺寸作为源区域）
+                svgImage.draw(
+                    in: drawRect,
+                    from: NSRect(origin: .zero, size: svgImage.size),
+                    operation: .copy,
+                    fraction: 1.0
+                )
+                
+                NSGraphicsContext.restoreGraphicsState()
+                
+                // 创建最终图片
+                let resultImage = NSImage(size: targetSize)
+                resultImage.addRepresentation(bitmapRep)
                 
                 DispatchQueue.main.async {
                     self.convertedImage = resultImage
@@ -308,38 +360,65 @@ struct SVGConverterView: View {
     }
     
     private func parseSVGDimensions(_ svg: String) -> (Double, Double) {
-        // 尝试从 SVG 标签中提取 width 和 height
-        var width: Double = 200
-        var height: Double = 200
+        var width: Double? = nil
+        var height: Double? = nil
+        var viewBoxWidth: Double? = nil
+        var viewBoxHeight: Double? = nil
         
-        // 匹配 width="xxx" 或 width='xxx'
-        if let widthMatch = svg.range(of: #"width\s*=\s*["']?(\d+)"#, options: .regularExpression) {
-            let widthStr = svg[widthMatch]
-            if let numMatch = widthStr.range(of: #"\d+"#, options: .regularExpression) {
-                width = Double(widthStr[numMatch]) ?? 200
+        // 提取数值（支持带单位如 px, pt, em 等）
+        func extractNumber(from str: String) -> Double? {
+            let pattern = #"([\d.]+)"#
+            if let range = str.range(of: pattern, options: .regularExpression) {
+                return Double(str[range])
+            }
+            return nil
+        }
+        
+        // 匹配 width="xxx" 或 width='xxx'（支持带单位）
+        let widthPattern = #"<svg[^>]*\swidth\s*=\s*["']([^"']+)["']"#
+        if let regex = try? NSRegularExpression(pattern: widthPattern, options: .caseInsensitive),
+           let match = regex.firstMatch(in: svg, options: [], range: NSRange(svg.startIndex..., in: svg)),
+           let range = Range(match.range(at: 1), in: svg) {
+            let value = String(svg[range])
+            // 如果是百分比，跳过
+            if !value.contains("%") {
+                width = extractNumber(from: value)
             }
         }
         
-        // 匹配 height="xxx" 或 height='xxx'
-        if let heightMatch = svg.range(of: #"height\s*=\s*["']?(\d+)"#, options: .regularExpression) {
-            let heightStr = svg[heightMatch]
-            if let numMatch = heightStr.range(of: #"\d+"#, options: .regularExpression) {
-                height = Double(heightStr[numMatch]) ?? 200
+        // 匹配 height="xxx" 或 height='xxx'（支持带单位）
+        let heightPattern = #"<svg[^>]*\sheight\s*=\s*["']([^"']+)["']"#
+        if let regex = try? NSRegularExpression(pattern: heightPattern, options: .caseInsensitive),
+           let match = regex.firstMatch(in: svg, options: [], range: NSRange(svg.startIndex..., in: svg)),
+           let range = Range(match.range(at: 1), in: svg) {
+            let value = String(svg[range])
+            // 如果是百分比，跳过
+            if !value.contains("%") {
+                height = extractNumber(from: value)
             }
         }
         
-        // 尝试从 viewBox 获取尺寸
-        if let viewBoxMatch = svg.range(of: #"viewBox\s*=\s*["']([^"']+)["']"#, options: .regularExpression) {
-            let viewBoxStr = String(svg[viewBoxMatch])
-            let numbers = viewBoxStr.components(separatedBy: CharacterSet(charactersIn: "0123456789.").inverted)
+        // 解析 viewBox（格式: "minX minY width height"）
+        let viewBoxPattern = #"<svg[^>]*\sviewBox\s*=\s*["']([^"']+)["']"#
+        if let regex = try? NSRegularExpression(pattern: viewBoxPattern, options: .caseInsensitive),
+           let match = regex.firstMatch(in: svg, options: [], range: NSRange(svg.startIndex..., in: svg)),
+           let range = Range(match.range(at: 1), in: svg) {
+            let viewBoxStr = String(svg[range])
+            // viewBox 值用空格或逗号分隔
+            let components = viewBoxStr.components(separatedBy: CharacterSet(charactersIn: " ,"))
+                .filter { !$0.isEmpty }
                 .compactMap { Double($0) }
-            if numbers.count >= 4 {
-                if width == 200 { width = numbers[2] }
-                if height == 200 { height = numbers[3] }
+            if components.count >= 4 {
+                viewBoxWidth = components[2]
+                viewBoxHeight = components[3]
             }
         }
         
-        return (max(width, 10), max(height, 10))
+        // 优先使用 width/height，如果没有则用 viewBox
+        let finalWidth = width ?? viewBoxWidth ?? 200
+        let finalHeight = height ?? viewBoxHeight ?? 200
+        
+        return (max(finalWidth, 10), max(finalHeight, 10))
     }
     
     private func checkPasteboardOnAppear() {
