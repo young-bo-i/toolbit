@@ -195,6 +195,8 @@ struct ContentView: View {
                 XMLFormatterView()
             case .ocr:
                 OCRView()
+            case .activityTracker:
+                ActivityTrackerView()
             }
         }
         .id(selectedTool)

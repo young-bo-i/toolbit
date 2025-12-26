@@ -67,6 +67,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 禁止多窗口
         NSWindow.allowsAutomaticWindowTabbing = false
+        
+        // 检查是否需要自动启动活动监控
+        let monitor = ActivityMonitor.shared
+        monitor.checkPermission()
+        
+        // 如果之前启用了监控且有权限，自动开始
+        if UserDefaults.standard.bool(forKey: "ActivityMonitorEnabled") && monitor.hasPermission {
+            monitor.startMonitoring()
+        }
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -85,6 +94,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         // 关闭最后一个窗口时不退出应用
         return false
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        // 应用退出时确保数据写入
+        ActivityMonitor.shared.flush()
     }
 }
 

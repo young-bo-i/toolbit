@@ -113,6 +113,7 @@ struct L10n {
     static var categoryEncoderDecoder: String { manager.localized("category.encoderDecoder", defaultValue: "编解码器") }
     static var categoryFormatters: String { manager.localized("category.formatters", defaultValue: "格式化工具") }
     static var categoryImageTools: String { manager.localized("category.imageTools", defaultValue: "图片工具") }
+    static var categoryStatistics: String { manager.localized("category.statistics", defaultValue: "统计工具") }
     
     // 工具
     static var toolCharacterCount: String { manager.localized("tool.characterCount", defaultValue: "字符统计") }
@@ -128,6 +129,7 @@ struct L10n {
     static var toolSqlFormatter: String { manager.localized("tool.sqlFormatter", defaultValue: "SQL") }
     static var toolXmlFormatter: String { manager.localized("tool.xmlFormatter", defaultValue: "XML") }
     static var toolOcr: String { manager.localized("tool.ocr", defaultValue: "OCR文字识别") }
+    static var toolActivityTracker: String { manager.localized("tool.activityTracker", defaultValue: "活动追踪") }
     
     // 操作
     static var actionPaste: String { manager.localized("action.paste", defaultValue: "粘贴") }

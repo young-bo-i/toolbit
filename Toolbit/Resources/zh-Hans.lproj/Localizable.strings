@@ -40,6 +40,7 @@
 "category.encoderDecoder" = "编解码器";
 "category.formatters" = "格式化工具";
 "category.imageTools" = "图片工具";
+"category.statistics" = "统计工具";
 
 // MARK: - Tool Names
 "tool.characterCount" = "字符统计";
@@ -55,6 +56,7 @@
 "tool.sqlFormatter" = "SQL";
 "tool.xmlFormatter" = "XML";
 "tool.ocr" = "OCR文字识别";
+"tool.activityTracker" = "活动追踪";
 
 // MARK: - Common Actions
 "action.paste" = "粘贴";

@@ -36,6 +36,15 @@
 		A100001B238F0002 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002D238F0001 /* WindowAccessor.swift */; };
 		A100001C238F0002 /* UpdateBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002E238F0001 /* UpdateBanner.swift */; };
 		A100001D238F0002 /* AIConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002F238F0001 /* AIConfigManager.swift */; };
+		A1000030238F0002 /* ActivityEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000038238F0001 /* ActivityEvent.swift */; };
+		A1000031238F0002 /* ActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039238F0001 /* ActivityMonitor.swift */; };
+		A1000032238F0002 /* ActivityDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003A238F0001 /* ActivityDataManager.swift */; };
+		A1000033238F0002 /* ActivityTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003B238F0001 /* ActivityTrackerView.swift */; };
+		A1000034238F0002 /* ActivityTracker.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = A100003C238F0001 /* ActivityTracker.xcdatamodeld */; };
+		A1000035238F0002 /* KeyboardHeatmapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003D238F0001 /* KeyboardHeatmapView.swift */; };
+		A1000036238F0002 /* MouseHeatmapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003E238F0001 /* MouseHeatmapView.swift */; };
+		A1000037238F0002 /* GestureVisualizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003F238F0001 /* GestureVisualizationView.swift */; };
+		A1000100238F0002 /* TimelineHeatmapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000100238F0001 /* TimelineHeatmapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +79,15 @@
 		A100002D238F0001 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 		A100002E238F0001 /* UpdateBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBanner.swift; sourceTree = "<group>"; };
 		A100002F238F0001 /* AIConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConfigManager.swift; sourceTree = "<group>"; };
+		A1000038238F0001 /* ActivityEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEvent.swift; sourceTree = "<group>"; };
+		A1000039238F0001 /* ActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityMonitor.swift; sourceTree = "<group>"; };
+		A100003A238F0001 /* ActivityDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDataManager.swift; sourceTree = "<group>"; };
+		A100003B238F0001 /* ActivityTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTrackerView.swift; sourceTree = "<group>"; };
+		A100003C238F0001 /* ActivityTracker.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = ActivityTracker.xcdatamodeld; sourceTree = "<group>"; };
+		A100003D238F0001 /* KeyboardHeatmapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHeatmapView.swift; sourceTree = "<group>"; };
+		A100003E238F0001 /* MouseHeatmapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseHeatmapView.swift; sourceTree = "<group>"; };
+		A100003F238F0001 /* GestureVisualizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureVisualizationView.swift; sourceTree = "<group>"; };
+		A1000100238F0001 /* TimelineHeatmapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineHeatmapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +120,7 @@
 				A1000037238F0001 /* Services */,
 				A1000013238F0001 /* Assets.xcassets */,
 				A1000016238F0001 /* Toolbit.entitlements */,
+				A100003C238F0001 /* ActivityTracker.xcdatamodeld */,
 			);
 			path = Toolbit;
 			sourceTree = "<group>";
@@ -134,6 +153,7 @@
 				A1000025238F0001 /* MarkdownPreviewView.swift */,
 				A1000026238F0001 /* OCRView.swift */,
 				A1000028238F0001 /* UpdateView.swift */,
+				A100003B238F0001 /* ActivityTrackerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -144,6 +164,10 @@
 				A1000023238F0001 /* CodeEditor.swift */,
 				A100002B238F0001 /* AppLogoView.swift */,
 				A100002E238F0001 /* UpdateBanner.swift */,
+				A100003D238F0001 /* KeyboardHeatmapView.swift */,
+				A100003E238F0001 /* MouseHeatmapView.swift */,
+				A100003F238F0001 /* GestureVisualizationView.swift */,
+				A1000100238F0001 /* TimelineHeatmapView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -162,6 +186,7 @@
 			isa = PBXGroup;
 			children = (
 				A100001A238F0001 /* ToolCategory.swift */,
+				A1000038238F0001 /* ActivityEvent.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -172,6 +197,8 @@
 				A1000027238F0001 /* UpdateManager.swift */,
 				A1000029238F0001 /* LanguageManager.swift */,
 				A100002F238F0001 /* AIConfigManager.swift */,
+				A1000039238F0001 /* ActivityMonitor.swift */,
+				A100003A238F0001 /* ActivityDataManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -274,6 +301,15 @@
 				A100001B238F0002 /* WindowAccessor.swift in Sources */,
 				A100001C238F0002 /* UpdateBanner.swift in Sources */,
 				A100001D238F0002 /* AIConfigManager.swift in Sources */,
+				A1000030238F0002 /* ActivityEvent.swift in Sources */,
+				A1000031238F0002 /* ActivityMonitor.swift in Sources */,
+				A1000032238F0002 /* ActivityDataManager.swift in Sources */,
+				A1000033238F0002 /* ActivityTrackerView.swift in Sources */,
+				A1000034238F0002 /* ActivityTracker.xcdatamodeld in Sources */,
+				A1000035238F0002 /* KeyboardHeatmapView.swift in Sources */,
+				A1000036238F0002 /* MouseHeatmapView.swift in Sources */,
+				A1000037238F0002 /* GestureVisualizationView.swift in Sources */,
+				A1000100238F0002 /* TimelineHeatmapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

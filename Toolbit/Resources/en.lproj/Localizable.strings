@@ -40,6 +40,7 @@
 "category.encoderDecoder" = "Encoder/Decoder";
 "category.formatters" = "Formatters";
 "category.imageTools" = "Image Tools";
+"category.statistics" = "Statistics";
 
 // MARK: - Tool Names
 "tool.characterCount" = "Character Count";
@@ -55,6 +56,7 @@
 "tool.sqlFormatter" = "SQL";
 "tool.xmlFormatter" = "XML";
 "tool.ocr" = "OCR";
+"tool.activityTracker" = "Activity Tracker";
 
 // MARK: - Common Actions
 "action.paste" = "Paste";

@@ -6,6 +6,7 @@ enum ToolCategory: String, CaseIterable, Identifiable {
     case encoderDecoder
     case formatters
     case imageTools
+    case statistics
     
     var id: String { rawValue }
     
@@ -15,6 +16,7 @@ enum ToolCategory: String, CaseIterable, Identifiable {
         case .encoderDecoder: return L10n.categoryEncoderDecoder
         case .formatters: return L10n.categoryFormatters
         case .imageTools: return L10n.categoryImageTools
+        case .statistics: return L10n.categoryStatistics
         }
     }
     
@@ -28,6 +30,8 @@ enum ToolCategory: String, CaseIterable, Identifiable {
             return "text.alignleft"
         case .imageTools:
             return "photo"
+        case .statistics:
+            return "chart.bar.xaxis"
         }
     }
     
@@ -41,6 +45,8 @@ enum ToolCategory: String, CaseIterable, Identifiable {
             return [.jsonFormatter, .sqlFormatter, .xmlFormatter]
         case .imageTools:
             return [.ocr]
+        case .statistics:
+            return [.activityTracker]
         }
     }
 }
@@ -61,6 +67,7 @@ enum ToolType: String, CaseIterable, Identifiable {
     case sqlFormatter
     case xmlFormatter
     case ocr
+    case activityTracker
     
     var id: String { rawValue }
     
@@ -85,6 +92,7 @@ enum ToolType: String, CaseIterable, Identifiable {
         case .sqlFormatter: return L10n.toolSqlFormatter
         case .xmlFormatter: return L10n.toolXmlFormatter
         case .ocr: return L10n.toolOcr
+        case .activityTracker: return L10n.toolActivityTracker
         }
     }
     
@@ -104,6 +112,7 @@ enum ToolType: String, CaseIterable, Identifiable {
         case .sqlFormatter: return "格式化 SQL 语句"
         case .xmlFormatter: return "格式化 XML 文档"
         case .ocr: return "识别图片中的文字"
+        case .activityTracker: return "追踪键盘鼠标活动"
         }
     }
     
@@ -137,6 +146,8 @@ enum ToolType: String, CaseIterable, Identifiable {
             return "chevron.left.forwardslash.chevron.right"
         case .ocr:
             return "text.viewfinder"
+        case .activityTracker:
+            return "keyboard.badge.eye"
         }
     }
     
@@ -156,6 +167,7 @@ enum ToolType: String, CaseIterable, Identifiable {
         case .sqlFormatter: return .purple
         case .xmlFormatter: return .green
         case .ocr: return .red
+        case .activityTracker: return .mint
         }
     }
     
@@ -171,6 +183,8 @@ enum ToolType: String, CaseIterable, Identifiable {
             return .formatters
         case .ocr:
             return .imageTools
+        case .activityTracker:
+            return .statistics
         }
     }
 }
