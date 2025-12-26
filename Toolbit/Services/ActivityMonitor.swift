@@ -47,11 +47,15 @@ class ActivityMonitor: ObservableObject {
     private var scrollThrottler = ScrollThrottler()
     
     // 监控的事件类型
+    // 修饰键状态追踪（避免重复计数）
+    private var lastModifierFlags: CGEventFlags = []
+    
     private let eventMask: CGEventMask = {
         var mask: CGEventMask = 0
         
         // 键盘事件
         mask |= (1 << CGEventType.keyDown.rawValue)
+        mask |= (1 << CGEventType.flagsChanged.rawValue)  // 修饰键：Shift, Control, Option, Command
         
         // 鼠标事件
         mask |= (1 << CGEventType.leftMouseDown.rawValue)
@@ -248,6 +252,38 @@ class ActivityMonitor: ObservableObject {
             }
             shouldUpdateUI = true
             
+        case .flagsChanged:
+            // 处理修饰键：Shift, Control, Option, Command, Fn, Caps Lock
+            let flags = event.flags
+            let keyCode = Int16(event.getIntegerValueField(.keyboardEventKeycode))
+            
+            // 检测哪个修饰键被按下（通过比较前后状态）
+            // 修饰键的 keyCode:
+            // 56 = Left Shift, 60 = Right Shift
+            // 59 = Left Control, 62 = Right Control
+            // 58 = Left Option, 61 = Right Option
+            // 55 = Left Command, 54 = Right Command
+            // 57 = Caps Lock
+            // 63 = Fn
+            
+            // 只在按下时记录（不记录释放）
+            let modifierKeyCodes: Set<Int16> = [54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+            if modifierKeyCodes.contains(keyCode) {
+                // 检查是按下还是释放
+                let isPressed = isModifierPressed(keyCode: keyCode, flags: flags)
+                if isPressed {
+                    rawEvent = RawEventData(
+                        eventType: .keyDown,
+                        keyCode: keyCode
+                    )
+                    DispatchQueue.main.async {
+                        self.realtimeKeyStats[keyCode, default: 0] += 1
+                    }
+                    shouldUpdateUI = true
+                }
+            }
+            lastModifierFlags = flags
+            
         case .leftMouseDown:
             rawEvent = RawEventData(
                 eventType: .leftMouseDown,
@@ -390,6 +426,28 @@ class ActivityMonitor: ObservableObject {
         realtimeOtherClickCount = 0
         realtimeGestureScrollCount = 0
         lastUpdateTime = Date()
+    }
+    
+    // MARK: - 辅助方法
+    
+    /// 判断修饰键是否被按下
+    private func isModifierPressed(keyCode: Int16, flags: CGEventFlags) -> Bool {
+        switch keyCode {
+        case 56, 60: // Left/Right Shift
+            return flags.contains(.maskShift)
+        case 59, 62: // Left/Right Control
+            return flags.contains(.maskControl)
+        case 58, 61: // Left/Right Option
+            return flags.contains(.maskAlternate)
+        case 54, 55: // Left/Right Command
+            return flags.contains(.maskCommand)
+        case 57: // Caps Lock
+            return flags.contains(.maskAlphaShift)
+        case 63: // Fn
+            return flags.contains(.maskSecondaryFn)
+        default:
+            return false
+        }
     }
 }
 

@@ -61,60 +61,87 @@ struct KeyboardHeatmapView: View {
         }
     }
     
-    // MARK: - 功能键行
+    // 间距常量
+    private let keyGap: CGFloat = 2
+    private let keyHeight: CGFloat = 40
+    private let fnKeyHeight: CGFloat = 30  // 功能键高度 0.75U
+    private let arrowKeyHeight: CGFloat = 19  // 方向键高度 约0.5U
+    
+    // MARK: - 功能键行 (esc + F1-F12，每个约1.0357U，高度0.75U)
     private var functionRow: some View {
-        HStack(spacing: 4) {
-            KeyCap(keyCode: 53, label: "esc", width: 40, keyStats: keyStats, maxCount: maxCount)
-            Spacer().frame(width: 8)
+        HStack(spacing: keyGap) {
+            KeyCap(keyCode: 53, label: "esc", width: 41, height: fnKeyHeight, keyStats: keyStats, maxCount: maxCount)
             ForEach(KeyboardLayout.functionKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: 36, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: fnKeyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
     }
     
     // MARK: - 数字行
     private var numberRow: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.numberRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
     }
     
     // MARK: - QWERTY 行
     private var qwertyRow: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.qwertyRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
     }
     
     // MARK: - ASDF 行
     private var asdfRow: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.asdfRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
     }
     
     // MARK: - ZXCV 行
     private var zxcvRow: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.zxcvRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
     }
     
-    // MARK: - 空格行
+    // MARK: - 空格行（含方向键）
+    // 方向键紧挨着右 Option 键
     private var spaceRow: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.spaceRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+            }
+            // 方向键区域（紧挨着右 Option）
+            arrowKeysView
+        }
+    }
+    
+    // MARK: - 方向键（半高布局）
+    private var arrowKeysView: some View {
+        VStack(spacing: keyGap) {
+            // 上键居中
+            HStack(spacing: keyGap) {
+                Spacer().frame(width: 42) // 1U + gap 占位
+                KeyCap(keyCode: 126, label: "↑", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                Spacer().frame(width: 42)
+            }
+            // 左下右
+            HStack(spacing: keyGap) {
+                KeyCap(keyCode: 123, label: "←", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: 125, label: "↓", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: 124, label: "→", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
             }
         }
+        .frame(height: keyHeight)
     }
     
     // MARK: - 热力图图例
@@ -168,6 +195,7 @@ struct KeyCap: View {
     let keyCode: Int16
     let label: String
     let width: CGFloat
+    var height: CGFloat = 36
     let keyStats: [Int16: Int]
     let maxCount: Int
     
@@ -205,24 +233,24 @@ struct KeyCap: View {
     @State private var isHovered = false
     
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: height > 20 ? 2 : 0) {
             Text(label)
-                .font(.system(size: width > 50 ? 10 : 9, weight: .medium, design: .rounded))
+                .font(.system(size: height > 20 ? (width > 50 ? 10 : 9) : 8, weight: .medium, design: .rounded))
                 .foregroundStyle(textColor)
             
-            if count > 0 && isHovered {
+            if count > 0 && isHovered && height > 20 {
                 Text("\(count)")
                     .font(.system(size: 7, weight: .bold, design: .monospaced))
                     .foregroundStyle(textColor.opacity(0.8))
             }
         }
-        .frame(width: width, height: 36)
+        .frame(width: width, height: height)
         .background(
-            RoundedRectangle(cornerRadius: 5)
+            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
                 .fill(backgroundColor)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 5)
+            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
                 .stroke(Color.primary.opacity(isHovered ? 0.3 : 0.1), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.1), radius: isHovered ? 2 : 1, x: 0, y: 1)
@@ -255,71 +283,88 @@ struct KeyboardLayout {
         let label: String
         let width: CGFloat
         
-        init(_ keyCode: Int16, _ label: String, width: CGFloat = 36) {
+        init(_ keyCode: Int16, _ label: String, width: CGFloat = 40) {
             self.keyCode = keyCode
             self.label = label
             self.width = width
         }
     }
     
-    // macOS keyCode 映射
-    // 参考: https://eastmanreference.com/complete-list-of-applescript-key-codes
+    // 基准: 1U = 40px, 间距 2px
+    // 总宽度: 14.5U = 580px + 13*2px间距 = 606px
+    // 根据 KLE apple-wireless-keyboard.json 精确计算
     
+    static let unit: CGFloat = 40  // 1U = 40px
+    static let gap: CGFloat = 2    // 间距 2px
+    
+    // 功能键行: esc + F1-F12，每个 1.0357U (约41px)，高度 0.75U
     static let functionKeys: [KeyInfo] = [
-        KeyInfo(122, "F1"), KeyInfo(120, "F2"), KeyInfo(99, "F3"), KeyInfo(118, "F4"),
-        KeyInfo(96, "F5"), KeyInfo(97, "F6"), KeyInfo(98, "F7"), KeyInfo(100, "F8"),
-        KeyInfo(101, "F9"), KeyInfo(109, "F10"), KeyInfo(103, "F11"), KeyInfo(111, "F12")
+        KeyInfo(122, "F1", width: 41), KeyInfo(120, "F2", width: 41),
+        KeyInfo(99, "F3", width: 41), KeyInfo(118, "F4", width: 41),
+        KeyInfo(96, "F5", width: 41), KeyInfo(97, "F6", width: 41),
+        KeyInfo(98, "F7", width: 41), KeyInfo(100, "F8", width: 41),
+        KeyInfo(101, "F9", width: 41), KeyInfo(109, "F10", width: 41),
+        KeyInfo(103, "F11", width: 41), KeyInfo(111, "F12", width: 41)
     ]
     
+    // 数字行: 13个1U + delete(1.5U) = 14.5U
     static let numberRowKeys: [KeyInfo] = [
         KeyInfo(50, "`"), KeyInfo(18, "1"), KeyInfo(19, "2"), KeyInfo(20, "3"),
         KeyInfo(21, "4"), KeyInfo(23, "5"), KeyInfo(22, "6"), KeyInfo(26, "7"),
         KeyInfo(28, "8"), KeyInfo(25, "9"), KeyInfo(29, "0"), KeyInfo(27, "-"),
-        KeyInfo(24, "="), KeyInfo(51, "⌫", width: 56)
+        KeyInfo(24, "="), KeyInfo(51, "⌫", width: 60)  // 1.5U
     ]
     
+    // Tab行: tab(1.5U) + 12个1U + \(1U) = 14.5U
     static let qwertyRowKeys: [KeyInfo] = [
-        KeyInfo(48, "⇥", width: 50),
+        KeyInfo(48, "⇥", width: 60),  // 1.5U
         KeyInfo(12, "Q"), KeyInfo(13, "W"), KeyInfo(14, "E"), KeyInfo(15, "R"),
         KeyInfo(17, "T"), KeyInfo(16, "Y"), KeyInfo(32, "U"), KeyInfo(34, "I"),
         KeyInfo(31, "O"), KeyInfo(35, "P"), KeyInfo(33, "["), KeyInfo(30, "]"),
-        KeyInfo(42, "\\", width: 50)
+        KeyInfo(42, "\\")  // 1U
     ]
     
+    // Caps行: caps(1.75U) + 11个1U + return(1.75U) = 14.5U
     static let asdfRowKeys: [KeyInfo] = [
-        KeyInfo(57, "⇪", width: 58),
+        KeyInfo(57, "⇪", width: 70),  // 1.75U
         KeyInfo(0, "A"), KeyInfo(1, "S"), KeyInfo(2, "D"), KeyInfo(3, "F"),
         KeyInfo(5, "G"), KeyInfo(4, "H"), KeyInfo(38, "J"), KeyInfo(40, "K"),
         KeyInfo(37, "L"), KeyInfo(41, ";"), KeyInfo(39, "'"),
-        KeyInfo(36, "⏎", width: 62)
+        KeyInfo(36, "⏎", width: 70)  // 1.75U
     ]
     
+    // Shift行: shift(2.25U) + 10个1U + shift(2.25U) = 14.5U
     static let zxcvRowKeys: [KeyInfo] = [
-        KeyInfo(56, "⇧", width: 76),
+        KeyInfo(56, "⇧", width: 90),  // 2.25U
         KeyInfo(6, "Z"), KeyInfo(7, "X"), KeyInfo(8, "C"), KeyInfo(9, "V"),
         KeyInfo(11, "B"), KeyInfo(45, "N"), KeyInfo(46, "M"),
         KeyInfo(43, ","), KeyInfo(47, "."), KeyInfo(44, "/"),
-        KeyInfo(60, "⇧", width: 76)
+        KeyInfo(60, "⇧", width: 90)  // 2.25U
     ]
     
+    // 空格行: fn(1U) + ctrl(1U) + opt(1U) + cmd(1.25U) + space(5U) + cmd(1.25U) + opt(1U) = 11.5U
+    // 方向键从 x=11.5 开始，占 3U
     static let spaceRowKeys: [KeyInfo] = [
-        KeyInfo(59, "⌃", width: 44),
-        KeyInfo(58, "⌥", width: 44),
-        KeyInfo(55, "⌘", width: 52),
-        KeyInfo(49, "Space", width: 200),
-        KeyInfo(54, "⌘", width: 52),
-        KeyInfo(61, "⌥", width: 44),
-        KeyInfo(62, "⌃", width: 44)
+        KeyInfo(63, "fn"),              // 1U = 40
+        KeyInfo(59, "⌃"),               // 1U = 40
+        KeyInfo(58, "⌥"),               // 1U = 40
+        KeyInfo(55, "⌘", width: 50),    // 1.25U = 50
+        KeyInfo(49, "", width: 200),    // 5U = 200
+        KeyInfo(54, "⌘", width: 50),    // 1.25U = 50
+        KeyInfo(61, "⌥")                // 1U = 40
     ]
+    // 空格行总宽: 40+40+40+50+200+50+40 = 460px + 6*2间距 = 472px
+    // 方向键起始: 11.5U = 460px + 间距，占 3U = 120px + 间距
     
     // keyCode 转标签
     static func keyCodeToLabel(_ keyCode: Int16) -> String {
+        // 先检查所有键盘布局
         let allKeys = functionKeys + numberRowKeys + qwertyRowKeys + asdfRowKeys + zxcvRowKeys + spaceRowKeys
-        if let key = allKeys.first(where: { $0.keyCode == keyCode }) {
+        if let key = allKeys.first(where: { $0.keyCode == keyCode }), !key.label.isEmpty {
             return key.label
         }
         
-        // 特殊键
+        // 特殊键和修饰键
         switch keyCode {
         case 53: return "esc"
         case 36: return "⏎"
@@ -331,6 +376,12 @@ struct KeyboardLayout {
         case 124: return "→"
         case 125: return "↓"
         case 126: return "↑"
+        case 54, 55: return "⌘"
+        case 56, 60: return "⇧"
+        case 57: return "⇪"
+        case 58, 61: return "⌥"
+        case 59: return "⌃"
+        case 63: return "fn"
         default: return "[\(keyCode)]"
         }
     }
