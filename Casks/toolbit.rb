@@ -10,8 +10,8 @@
 #    brew upgrade --cask toolbit
 
 cask "toolbit" do
-  version "1.0.18"
-  sha256 "ffb28f20db69f6adb364644ff4eb924b7b9d54563c17abb6d6838db23b8078db"  # 由 GitHub Actions 自动更新
+  version "1.0.19"
+  sha256 "ea2e47e5fe6841623effb2d33a3e7168cacfe506462bc7a0252b08ca9462604f"  # 由 GitHub Actions 自动更新
 
   url "https://github.com/young-bo-i/toolbit/releases/download/v#{version}/Toolbit-#{version}.zip",
       verified: "github.com/young-bo-i/toolbit/"
