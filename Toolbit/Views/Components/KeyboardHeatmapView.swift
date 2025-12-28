@@ -190,7 +190,7 @@ struct KeyboardHeatmapView: View {
     }
 }
 
-// MARK: - 单个按键
+// MARK: - 单个按键（优化版本 - 移除动画和阴影以提升性能）
 struct KeyCap: View {
     let keyCode: Int16
     let label: String
@@ -230,36 +230,20 @@ struct KeyCap: View {
         return .primary
     }
     
-    @State private var isHovered = false
-    
     var body: some View {
-        VStack(spacing: height > 20 ? 2 : 0) {
-            Text(label)
-                .font(.system(size: height > 20 ? (width > 50 ? 10 : 9) : 8, weight: .medium, design: .rounded))
-                .foregroundStyle(textColor)
-            
-            if count > 0 && isHovered && height > 20 {
-                Text("\(count)")
-                    .font(.system(size: 7, weight: .bold, design: .monospaced))
-                    .foregroundStyle(textColor.opacity(0.8))
-            }
-        }
-        .frame(width: width, height: height)
-        .background(
-            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
-                .fill(backgroundColor)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
-                .stroke(Color.primary.opacity(isHovered ? 0.3 : 0.1), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.1), radius: isHovered ? 2 : 1, x: 0, y: 1)
-        .scaleEffect(isHovered ? 1.05 : 1.0)
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .onHover { hovering in
-            isHovered = hovering
-        }
-        .help(count > 0 ? "\(label): \(count) 次" : label)
+        Text(label)
+            .font(.system(size: height > 20 ? (width > 50 ? 10 : 9) : 8, weight: .medium, design: .rounded))
+            .foregroundStyle(textColor)
+            .frame(width: width, height: height)
+            .background(
+                RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
+                    .fill(backgroundColor)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .help(count > 0 ? "\(label): \(count) 次" : label)
     }
 }
 

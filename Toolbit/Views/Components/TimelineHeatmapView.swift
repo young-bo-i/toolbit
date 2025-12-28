@@ -1,23 +1,67 @@
 import SwiftUI
 
 // MARK: - 时间范围类型（用于时间轴显示）
-enum TimelineRangeType {
+enum TimelineRangeType: Equatable {
     case today
     case week
     case month
     case custom
 }
 
-// MARK: - 横向时间轴热力图视图
-struct TimelineHeatmapView: View {
-    let rangeType: TimelineRangeType
-    let customStart: Date?
-    let customEnd: Date?
+// MARK: - 时间轴数据缓存
+private class TimelineDataCache: ObservableObject {
+    @Published var data: [ActivityDataManager.TimeSlotStats] = []
+    @Published var maxCount: Int = 1
     
-    private let minSlotWidth: CGFloat = 8  // 最小格子宽度
+    private var lastRangeType: TimelineRangeType?
+    private var lastCustomStart: Date?
+    private var lastCustomEnd: Date?
+    private var lastSlotCount: Int = 0
+    private var lastLoadTime: Date = .distantPast
     
-    // 获取完整的时间范围
-    private var fullRange: (start: Date, end: Date) {
+    func loadDataIfNeeded(
+        rangeType: TimelineRangeType,
+        customStart: Date?,
+        customEnd: Date?,
+        slotCount: Int,
+        forceReload: Bool = false
+    ) {
+        // 检查是否需要重新加载（参数变化或超过5秒）
+        let needsReload = forceReload ||
+            rangeType != lastRangeType ||
+            customStart != lastCustomStart ||
+            customEnd != lastCustomEnd ||
+            abs(slotCount - lastSlotCount) > 5 ||
+            Date().timeIntervalSince(lastLoadTime) > 5.0
+        
+        guard needsReload else { return }
+        
+        lastRangeType = rangeType
+        lastCustomStart = customStart
+        lastCustomEnd = customEnd
+        lastSlotCount = slotCount
+        lastLoadTime = Date()
+        
+        // 在后台线程加载数据
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let fullRange = Self.getFullRange(rangeType: rangeType, customStart: customStart, customEnd: customEnd)
+            let currentTime = Date()
+            let newData = ActivityDataManager.shared.getTimelineHeatmapData(
+                from: fullRange.start,
+                to: fullRange.end,
+                slotCount: slotCount,
+                currentTime: currentTime
+            )
+            let newMaxCount = newData.map(\.count).max() ?? 1
+            
+            DispatchQueue.main.async {
+                self?.data = newData
+                self?.maxCount = newMaxCount
+            }
+        }
+    }
+    
+    static func getFullRange(rangeType: TimelineRangeType, customStart: Date?, customEnd: Date?) -> (start: Date, end: Date) {
         switch rangeType {
         case .today:
             return ActivityDataManager.shared.getTodayFullRange()
@@ -28,6 +72,23 @@ struct TimelineHeatmapView: View {
         case .custom:
             return (customStart ?? Date(), customEnd ?? Date())
         }
+    }
+}
+
+// MARK: - 横向时间轴热力图视图
+struct TimelineHeatmapView: View {
+    let rangeType: TimelineRangeType
+    let customStart: Date?
+    let customEnd: Date?
+    
+    @StateObject private var cache = TimelineDataCache()
+    @State private var viewWidth: CGFloat = 300
+    
+    private let minSlotWidth: CGFloat = 8  // 最小格子宽度
+    
+    // 获取完整的时间范围
+    private var fullRange: (start: Date, end: Date) {
+        TimelineDataCache.getFullRange(rangeType: rangeType, customStart: customStart, customEnd: customEnd)
     }
     
     // 当前时间
@@ -55,13 +116,6 @@ struct TimelineHeatmapView: View {
         GeometryReader { geometry in
             let width = geometry.size.width
             let slotCount = max(Int(width / minSlotWidth), 10)
-            let data = ActivityDataManager.shared.getTimelineHeatmapData(
-                from: fullRange.start,
-                to: fullRange.end,
-                slotCount: slotCount,
-                currentTime: currentTime
-            )
-            let maxCount = data.map(\.count).max() ?? 1
             
             // 计算当前时间在时间轴上的位置比例
             let currentTimeRatio: CGFloat = {
@@ -98,8 +152,8 @@ struct TimelineHeatmapView: View {
                 ZStack(alignment: .leading) {
                     // 热力条
                     HStack(spacing: 1) {
-                        ForEach(data) { slot in
-                            TimeSlotCell(slot: slot, maxCount: maxCount)
+                        ForEach(cache.data) { slot in
+                            TimeSlotCell(slot: slot, maxCount: cache.maxCount)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 3))
@@ -117,6 +171,23 @@ struct TimelineHeatmapView: View {
                     }
                 }
                 .frame(height: 16)
+            }
+            .onAppear {
+                cache.loadDataIfNeeded(
+                    rangeType: rangeType,
+                    customStart: customStart,
+                    customEnd: customEnd,
+                    slotCount: slotCount
+                )
+            }
+            .onChange(of: rangeType) { _, _ in
+                cache.loadDataIfNeeded(
+                    rangeType: rangeType,
+                    customStart: customStart,
+                    customEnd: customEnd,
+                    slotCount: slotCount,
+                    forceReload: true
+                )
             }
         }
         .frame(height: 36)
@@ -153,12 +224,10 @@ struct TimelineHeatmapView: View {
     }
 }
 
-// MARK: - 时间段单元格
+// MARK: - 时间段单元格（优化版本 - 移除 hover 动画）
 struct TimeSlotCell: View {
     let slot: ActivityDataManager.TimeSlotStats
     let maxCount: Int
-    
-    @State private var isHovered = false
     
     private var intensity: Double {
         guard maxCount > 0 else { return 0 }
@@ -186,6 +255,13 @@ struct TimeSlotCell: View {
         }
     }
     
+    private var tooltipText: String {
+        if slot.isFuture {
+            return "\(slot.label) (未来)"
+        }
+        return "\(slot.label): \(slot.count) 次"
+    }
+    
     var body: some View {
         Rectangle()
             .fill(backgroundColor)
@@ -198,39 +274,7 @@ struct TimeSlotCell: View {
                     }
                 }
             )
-            .overlay(
-                // 悬浮提示
-                Group {
-                    if isHovered {
-                        VStack(spacing: 2) {
-                            Text(slot.label)
-                                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            if slot.isFuture {
-                                Text("未来")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Text("\(slot.count) 次")
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color(nsColor: .windowBackgroundColor))
-                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        )
-                        .offset(y: -30)
-                    }
-                }
-            )
-            .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    isHovered = hovering
-                }
-            }
+            .help(tooltipText)
     }
 }
 

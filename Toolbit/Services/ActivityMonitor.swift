@@ -41,7 +41,12 @@ class ActivityMonitor: ObservableObject {
     
     // UI 更新节流（避免过于频繁的 UI 更新）
     private var uiUpdateThrottleTime: TimeInterval = 0
-    private let uiUpdateInterval: TimeInterval = 0.5  // 500ms 更新一次 UI
+    private let uiUpdateInterval: TimeInterval = 1.0  // 1秒更新一次 UI（降低频率）
+    
+    // 批量 UI 更新缓冲
+    private var pendingKeyUpdates: [Int16: Int] = [:]
+    private var pendingMouseUpdates: (left: Int, right: Int, middle: Int, other: Int, scroll: Int) = (0, 0, 0, 0, 0)
+    private let pendingUpdatesLock = NSLock()
     
     // 滚动节流器
     private var scrollThrottler = ScrollThrottler()
@@ -237,7 +242,6 @@ class ActivityMonitor: ObservableObject {
     // MARK: - 事件处理
     private func handleEvent(type: CGEventType, event: CGEvent) {
         var rawEvent: RawEventData?
-        var shouldUpdateUI = false
         
         switch type {
         case .keyDown:
@@ -246,40 +250,26 @@ class ActivityMonitor: ObservableObject {
                 eventType: .keyDown,
                 keyCode: keyCode
             )
-            // 实时更新按键统计
-            DispatchQueue.main.async {
-                self.realtimeKeyStats[keyCode, default: 0] += 1
-            }
-            shouldUpdateUI = true
+            // 缓冲按键更新
+            pendingUpdatesLock.lock()
+            pendingKeyUpdates[keyCode, default: 0] += 1
+            pendingUpdatesLock.unlock()
             
         case .flagsChanged:
-            // 处理修饰键：Shift, Control, Option, Command, Fn, Caps Lock
             let flags = event.flags
             let keyCode = Int16(event.getIntegerValueField(.keyboardEventKeycode))
             
-            // 检测哪个修饰键被按下（通过比较前后状态）
-            // 修饰键的 keyCode:
-            // 56 = Left Shift, 60 = Right Shift
-            // 59 = Left Control, 62 = Right Control
-            // 58 = Left Option, 61 = Right Option
-            // 55 = Left Command, 54 = Right Command
-            // 57 = Caps Lock
-            // 63 = Fn
-            
-            // 只在按下时记录（不记录释放）
             let modifierKeyCodes: Set<Int16> = [54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
             if modifierKeyCodes.contains(keyCode) {
-                // 检查是按下还是释放
                 let isPressed = isModifierPressed(keyCode: keyCode, flags: flags)
                 if isPressed {
                     rawEvent = RawEventData(
                         eventType: .keyDown,
                         keyCode: keyCode
                     )
-                    DispatchQueue.main.async {
-                        self.realtimeKeyStats[keyCode, default: 0] += 1
-                    }
-                    shouldUpdateUI = true
+                    pendingUpdatesLock.lock()
+                    pendingKeyUpdates[keyCode, default: 0] += 1
+                    pendingUpdatesLock.unlock()
                 }
             }
             lastModifierFlags = flags
@@ -289,20 +279,18 @@ class ActivityMonitor: ObservableObject {
                 eventType: .leftMouseDown,
                 mouseButton: 0
             )
-            DispatchQueue.main.async {
-                self.realtimeLeftClickCount += 1
-            }
-            shouldUpdateUI = true
+            pendingUpdatesLock.lock()
+            pendingMouseUpdates.left += 1
+            pendingUpdatesLock.unlock()
             
         case .rightMouseDown:
             rawEvent = RawEventData(
                 eventType: .rightMouseDown,
                 mouseButton: 1
             )
-            DispatchQueue.main.async {
-                self.realtimeRightClickCount += 1
-            }
-            shouldUpdateUI = true
+            pendingUpdatesLock.lock()
+            pendingMouseUpdates.right += 1
+            pendingUpdatesLock.unlock()
             
         case .otherMouseDown:
             let buttonNumber = Int16(event.getIntegerValueField(.mouseEventButtonNumber))
@@ -310,28 +298,25 @@ class ActivityMonitor: ObservableObject {
                 eventType: .otherMouseDown,
                 mouseButton: buttonNumber
             )
-            DispatchQueue.main.async {
-                if buttonNumber == 2 {
-                    self.realtimeMiddleClickCount += 1
-                } else {
-                    self.realtimeOtherClickCount += 1
-                }
+            pendingUpdatesLock.lock()
+            if buttonNumber == 2 {
+                pendingMouseUpdates.middle += 1
+            } else {
+                pendingMouseUpdates.other += 1
             }
-            shouldUpdateUI = true
+            pendingUpdatesLock.unlock()
             
         case .scrollWheel:
             let deltaX = event.getDoubleValueField(.scrollWheelEventDeltaAxis2)
             let deltaY = event.getDoubleValueField(.scrollWheelEventDeltaAxis1)
             
-            // 使用节流器判断是否记录
             if scrollThrottler.shouldRecord(deltaX: deltaX, deltaY: deltaY) {
                 rawEvent = RawEventData(
                     eventType: .scroll
                 )
-                DispatchQueue.main.async {
-                    self.realtimeScrollCount += 1
-                }
-                shouldUpdateUI = true
+                pendingUpdatesLock.lock()
+                pendingMouseUpdates.scroll += 1
+                pendingUpdatesLock.unlock()
             }
             
         default:
@@ -342,15 +327,41 @@ class ActivityMonitor: ObservableObject {
             enqueue(rawEvent)
         }
         
-        // 节流 UI 更新
-        if shouldUpdateUI {
-            let now = CACurrentMediaTime()
-            if now - uiUpdateThrottleTime >= uiUpdateInterval {
-                uiUpdateThrottleTime = now
-                DispatchQueue.main.async {
-                    self.lastUpdateTime = Date()
-                }
+        // 节流 UI 更新 - 批量应用缓冲的更新
+        let now = CACurrentMediaTime()
+        if now - uiUpdateThrottleTime >= uiUpdateInterval {
+            uiUpdateThrottleTime = now
+            flushPendingUIUpdates()
+        }
+    }
+    
+    /// 将缓冲的更新批量应用到 UI
+    private func flushPendingUIUpdates() {
+        pendingUpdatesLock.lock()
+        let keyUpdates = pendingKeyUpdates
+        let mouseUpdates = pendingMouseUpdates
+        pendingKeyUpdates.removeAll()
+        pendingMouseUpdates = (0, 0, 0, 0, 0)
+        pendingUpdatesLock.unlock()
+        
+        guard !keyUpdates.isEmpty || mouseUpdates.left > 0 || mouseUpdates.right > 0 || 
+              mouseUpdates.middle > 0 || mouseUpdates.other > 0 || mouseUpdates.scroll > 0 else {
+            return
+        }
+        
+        DispatchQueue.main.async {
+            // 批量更新按键统计
+            for (keyCode, count) in keyUpdates {
+                self.realtimeKeyStats[keyCode, default: 0] += count
             }
+            // 批量更新鼠标统计
+            self.realtimeLeftClickCount += mouseUpdates.left
+            self.realtimeRightClickCount += mouseUpdates.right
+            self.realtimeMiddleClickCount += mouseUpdates.middle
+            self.realtimeOtherClickCount += mouseUpdates.other
+            self.realtimeScrollCount += mouseUpdates.scroll
+            
+            self.lastUpdateTime = Date()
         }
     }
     

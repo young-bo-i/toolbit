@@ -100,12 +100,10 @@ struct ActivityTrackerView: View {
                                 customStart: selectedTimeRange == .custom ? customStartDate : nil,
                                 customEnd: selectedTimeRange == .custom ? customEndDate : nil
                             )
-                            .id(monitor.lastUpdateTime) // 强制刷新
                             
                             // 键盘热力图
                             KeyboardHeatmapView(keyStats: combinedKeyStats)
                                 .padding(.vertical, 8)
-                                .id(monitor.lastUpdateTime) // 强制刷新
                         }
                     }
                     
@@ -121,7 +119,6 @@ struct ActivityTrackerView: View {
                                 otherClickCount: combinedMouseStats.other
                             )
                             .padding(.vertical, 8)
-                            .id(monitor.lastUpdateTime) // 强制刷新
                         }
                         .frame(maxWidth: .infinity)
                         
@@ -131,7 +128,6 @@ struct ActivityTrackerView: View {
                                 scrollCount: combinedGestureScrollCount
                             )
                             .padding(.vertical, 8)
-                            .id(monitor.lastUpdateTime) // 强制刷新
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -527,13 +523,14 @@ struct ActivityTrackerView: View {
         }
     }
     
-    // MARK: - 定时刷新
+    // MARK: - 定时刷新（优化：降低刷新频率）
     private func startRefreshTimer() {
-        // 每 3 秒触发一次刷新（时间轴会自动根据当前时间更新）
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-            // 触发视图刷新
-            DispatchQueue.main.async {
-                self.monitor.lastUpdateTime = Date()
+        // 每 5 秒触发一次刷新（降低频率以减少 CPU 占用）
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            // 只在今日模式下自动刷新，其他模式数据不会变化
+            if self.selectedTimeRange == .today {
+                // 不需要强制刷新，SwiftUI 会根据 @Published 属性自动更新
             }
         }
     }
