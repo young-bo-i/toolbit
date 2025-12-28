@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import CoreGraphics
+import Combine
 
 // MARK: - 活动监控器
 class ActivityMonitor: ObservableObject {
@@ -29,21 +30,21 @@ class ActivityMonitor: ObservableObject {
     // 手势事件监控器
     private var gestureMonitors: [Any] = []
     
-    // 事件缓冲区
+    // 事件缓冲区（用于数据库写入）
     private var eventBuffer: [RawEventData] = []
     private let bufferLock = NSLock()
-    private let batchSize = 100  // 减小批量大小，更快写入
-    private let flushInterval: TimeInterval = 2.0  // 缩短刷新间隔
+    private let batchSize = 100
+    private let flushInterval: TimeInterval = 2.0
     private var flushTimer: Timer?
     
     // 权限检查定时器
     private var permissionCheckTimer: Timer?
     
-    // UI 更新节流（避免过于频繁的 UI 更新）
-    private var uiUpdateThrottleTime: TimeInterval = 0
-    private let uiUpdateInterval: TimeInterval = 1.0  // 1秒更新一次 UI（降低频率）
+    // Combine: UI 更新节流
+    private var uiUpdateSubject = PassthroughSubject<Void, Never>()
+    private var cancellables = Set<AnyCancellable>()
     
-    // 批量 UI 更新缓冲
+    // 待处理的 UI 更新（线程安全）
     private var pendingKeyUpdates: [Int16: Int] = [:]
     private var pendingMouseUpdates: (left: Int, right: Int, middle: Int, other: Int, scroll: Int) = (0, 0, 0, 0, 0)
     private let pendingUpdatesLock = NSLock()
@@ -76,6 +77,45 @@ class ActivityMonitor: ObservableObject {
     private init() {
         checkPermission()
         loadTodayStats()
+        setupUIUpdateThrottle()
+    }
+    
+    /// 使用 Combine 设置 UI 更新节流（500ms 内的更新合并为一次）
+    private func setupUIUpdateThrottle() {
+        uiUpdateSubject
+            .throttle(for: .milliseconds(500), scheduler: DispatchQueue.main, latest: true)
+            .sink { [weak self] in
+                self?.applyPendingUIUpdates()
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// 应用待处理的 UI 更新
+    private func applyPendingUIUpdates() {
+        pendingUpdatesLock.lock()
+        let keyUpdates = pendingKeyUpdates
+        let mouseUpdates = pendingMouseUpdates
+        pendingKeyUpdates.removeAll(keepingCapacity: true)
+        pendingMouseUpdates = (0, 0, 0, 0, 0)
+        pendingUpdatesLock.unlock()
+        
+        // 应用按键更新
+        for (keyCode, count) in keyUpdates {
+            realtimeKeyStats[keyCode, default: 0] += count
+        }
+        
+        // 应用鼠标更新
+        realtimeLeftClickCount += mouseUpdates.left
+        realtimeRightClickCount += mouseUpdates.right
+        realtimeMiddleClickCount += mouseUpdates.middle
+        realtimeOtherClickCount += mouseUpdates.other
+        realtimeScrollCount += mouseUpdates.scroll
+        
+        // 更新时间戳（触发依赖 lastUpdateTime 的视图刷新）
+        if !keyUpdates.isEmpty || mouseUpdates.left > 0 || mouseUpdates.right > 0 ||
+           mouseUpdates.middle > 0 || mouseUpdates.other > 0 || mouseUpdates.scroll > 0 {
+            lastUpdateTime = Date()
+        }
     }
     
     deinit {
@@ -242,6 +282,7 @@ class ActivityMonitor: ObservableObject {
     // MARK: - 事件处理
     private func handleEvent(type: CGEventType, event: CGEvent) {
         var rawEvent: RawEventData?
+        var needsUIUpdate = false
         
         switch type {
         case .keyDown:
@@ -254,6 +295,7 @@ class ActivityMonitor: ObservableObject {
             pendingUpdatesLock.lock()
             pendingKeyUpdates[keyCode, default: 0] += 1
             pendingUpdatesLock.unlock()
+            needsUIUpdate = true
             
         case .flagsChanged:
             let flags = event.flags
@@ -270,6 +312,7 @@ class ActivityMonitor: ObservableObject {
                     pendingUpdatesLock.lock()
                     pendingKeyUpdates[keyCode, default: 0] += 1
                     pendingUpdatesLock.unlock()
+                    needsUIUpdate = true
                 }
             }
             lastModifierFlags = flags
@@ -282,6 +325,7 @@ class ActivityMonitor: ObservableObject {
             pendingUpdatesLock.lock()
             pendingMouseUpdates.left += 1
             pendingUpdatesLock.unlock()
+            needsUIUpdate = true
             
         case .rightMouseDown:
             rawEvent = RawEventData(
@@ -291,6 +335,7 @@ class ActivityMonitor: ObservableObject {
             pendingUpdatesLock.lock()
             pendingMouseUpdates.right += 1
             pendingUpdatesLock.unlock()
+            needsUIUpdate = true
             
         case .otherMouseDown:
             let buttonNumber = Int16(event.getIntegerValueField(.mouseEventButtonNumber))
@@ -305,6 +350,7 @@ class ActivityMonitor: ObservableObject {
                 pendingMouseUpdates.other += 1
             }
             pendingUpdatesLock.unlock()
+            needsUIUpdate = true
             
         case .scrollWheel:
             let deltaX = event.getDoubleValueField(.scrollWheelEventDeltaAxis2)
@@ -317,51 +363,21 @@ class ActivityMonitor: ObservableObject {
                 pendingUpdatesLock.lock()
                 pendingMouseUpdates.scroll += 1
                 pendingUpdatesLock.unlock()
+                needsUIUpdate = true
             }
             
         default:
             break
         }
         
+        // 写入数据库缓冲区
         if let rawEvent = rawEvent {
             enqueue(rawEvent)
         }
         
-        // 节流 UI 更新 - 批量应用缓冲的更新
-        let now = CACurrentMediaTime()
-        if now - uiUpdateThrottleTime >= uiUpdateInterval {
-            uiUpdateThrottleTime = now
-            flushPendingUIUpdates()
-        }
-    }
-    
-    /// 将缓冲的更新批量应用到 UI
-    private func flushPendingUIUpdates() {
-        pendingUpdatesLock.lock()
-        let keyUpdates = pendingKeyUpdates
-        let mouseUpdates = pendingMouseUpdates
-        pendingKeyUpdates.removeAll()
-        pendingMouseUpdates = (0, 0, 0, 0, 0)
-        pendingUpdatesLock.unlock()
-        
-        guard !keyUpdates.isEmpty || mouseUpdates.left > 0 || mouseUpdates.right > 0 || 
-              mouseUpdates.middle > 0 || mouseUpdates.other > 0 || mouseUpdates.scroll > 0 else {
-            return
-        }
-        
-        DispatchQueue.main.async {
-            // 批量更新按键统计
-            for (keyCode, count) in keyUpdates {
-                self.realtimeKeyStats[keyCode, default: 0] += count
-            }
-            // 批量更新鼠标统计
-            self.realtimeLeftClickCount += mouseUpdates.left
-            self.realtimeRightClickCount += mouseUpdates.right
-            self.realtimeMiddleClickCount += mouseUpdates.middle
-            self.realtimeOtherClickCount += mouseUpdates.other
-            self.realtimeScrollCount += mouseUpdates.scroll
-            
-            self.lastUpdateTime = Date()
+        // 通过 Combine 节流触发 UI 更新
+        if needsUIUpdate {
+            uiUpdateSubject.send()
         }
     }
     

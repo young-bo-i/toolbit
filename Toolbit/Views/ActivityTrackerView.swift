@@ -2,7 +2,10 @@ import SwiftUI
 
 // MARK: - 活动追踪视图
 struct ActivityTrackerView: View {
-    @StateObject private var monitor = ActivityMonitor.shared
+    // 使用 @ObservedObject 而不是 @StateObject，因为 monitor 是单例
+    // 这样当 monitor 的 @Published 属性变化时，视图会自动刷新
+    @ObservedObject private var monitor = ActivityMonitor.shared
+    
     @State private var selectedTimeRange: TimeRange = .today
     @State private var keyStats: [Int16: Int] = [:]
     @State private var mouseStats: ActivityDataManager.MouseStats = .init()
@@ -11,7 +14,6 @@ struct ActivityTrackerView: View {
     @State private var showClearDaysConfirmation = false
     @State private var clearDaysCount: Int = 7
     @State private var isLoading = false
-    @State private var refreshTimer: Timer?
     
     // 自定义时间范围
     @State private var customStartDate: Date = Calendar.current.startOfDay(for: Date())
@@ -141,14 +143,10 @@ struct ActivityTrackerView: View {
         .navigationTitle(L10n.toolActivityTracker)
         .onAppear {
             loadStats()
-            startRefreshTimer()
             // 启动时检查是否需要自动清理
             if autoCleanupEnabled {
                 performAutoCleanup()
             }
-        }
-        .onDisappear {
-            stopRefreshTimer()
         }
         .onChange(of: selectedTimeRange) { _, _ in
             loadStats()
@@ -523,22 +521,10 @@ struct ActivityTrackerView: View {
         }
     }
     
-    // MARK: - 定时刷新（优化：降低刷新频率）
-    private func startRefreshTimer() {
-        // 每 5 秒触发一次刷新（降低频率以减少 CPU 占用）
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            // 只在今日模式下自动刷新，其他模式数据不会变化
-            if self.selectedTimeRange == .today {
-                // 不需要强制刷新，SwiftUI 会根据 @Published 属性自动更新
-            }
-        }
-    }
-    
-    private func stopRefreshTimer() {
-        refreshTimer?.invalidate()
-        refreshTimer = nil
-    }
+    // 注意：不再需要定时器！
+    // SwiftUI 会自动响应 ActivityMonitor 的 @Published 属性变化
+    // 当 realtimeKeyStats 等属性更新时，combinedKeyStats 等 computed property 会重新计算
+    // 视图会自动刷新显示最新数据
 }
 
 #Preview {

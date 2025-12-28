@@ -1,9 +1,14 @@
 import Foundation
 import CoreData
+import SQLite3
 
 // MARK: - 活动数据管理器
 class ActivityDataManager {
     static let shared = ActivityDataManager()
+    
+    // 压缩数据缓存（避免频繁读取数据库）
+    private var compactDataCache: [Int32: Data] = [:]
+    private let cacheLock = NSLock()
     
     // MARK: - Core Data 栈
     lazy var persistentContainer: NSPersistentContainer = {
@@ -34,34 +39,86 @@ class ActivityDataManager {
         }
     }
     
-    // MARK: - 批量插入
+    // MARK: - 批量插入（压缩存储）
     func batchInsert(_ events: [RawEventData]) {
+        guard !events.isEmpty else { return }
+        
         let context = persistentContainer.newBackgroundContext()
-        context.perform {
-            // 使用批量插入请求（iOS 13+ / macOS 10.15+）
-            let batchInsert = NSBatchInsertRequest(
-                entity: NSEntityDescription.entity(forEntityName: "ActivityEvent", in: context)!,
-                objects: events.map { $0.toDictionary() }
-            )
-            batchInsert.resultType = .count
+        context.perform { [weak self] in
+            guard let self = self else { return }
             
-            do {
-                let result = try context.execute(batchInsert) as? NSBatchInsertResult
-                if let count = result?.result as? Int {
-                    print("Batch inserted \(count) events")
-                }
-            } catch {
-                // 降级为普通插入
-                print("Batch insert failed, falling back to regular insert: \(error.localizedDescription)")
-                for event in events {
-                    let entity = NSEntityDescription.insertNewObject(forEntityName: "ActivityEvent", into: context)
-                    entity.setValue(event.timestamp, forKey: "timestamp")
-                    entity.setValue(event.eventType.rawValue, forKey: "eventType")
-                    entity.setValue(event.keyCode, forKey: "keyCode")
-                    entity.setValue(event.mouseButton, forKey: "mouseButton")
-                }
-                try? context.save()
+            // 按天分组事件
+            var eventsByDay: [Int32: [RawEventData]] = [:]
+            for event in events {
+                let dayTs = CompactEventCodec.dayTimestamp(for: event.timestamp)
+                eventsByDay[dayTs, default: []].append(event)
             }
+            
+            // 为每天追加数据
+            for (dayTs, dayEvents) in eventsByDay {
+                let dayStart = CompactEventCodec.dayStart(from: dayTs)
+                let newData = CompactEventCodec.encodeEvents(dayEvents, dayStart: dayStart)
+                
+                // 查找或创建当天的记录
+                let request = NSFetchRequest<NSManagedObject>(entityName: "CompactEvent")
+                request.predicate = NSPredicate(format: "dayTimestamp == %d", dayTs)
+                request.fetchLimit = 1
+                
+                do {
+                    let results = try context.fetch(request)
+                    
+                    if let existing = results.first, var existingData = existing.value(forKey: "data") as? Data {
+                        // 追加到现有数据
+                        existingData.append(newData)
+                        existing.setValue(existingData, forKey: "data")
+                    } else {
+                        // 创建新记录
+                        let entity = NSEntityDescription.insertNewObject(forEntityName: "CompactEvent", into: context)
+                        entity.setValue(dayTs, forKey: "dayTimestamp")
+                        entity.setValue(newData, forKey: "data")
+                    }
+                    
+                    try context.save()
+                    
+                    // 更新缓存
+                    self.cacheLock.lock()
+                    if var cachedData = self.compactDataCache[dayTs] {
+                        cachedData.append(newData)
+                        self.compactDataCache[dayTs] = cachedData
+                    }
+                    self.cacheLock.unlock()
+                    
+                    print("Compact inserted \(dayEvents.count) events for day \(dayTs)")
+                } catch {
+                    print("Failed to insert compact events: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    // MARK: - 获取压缩数据
+    
+    /// 获取指定日期范围的压缩数据
+    private func getCompactData(from startDate: Date, to endDate: Date) -> [(dayTimestamp: Int32, data: Data)] {
+        let startDayTs = CompactEventCodec.dayTimestamp(for: startDate)
+        let endDayTs = CompactEventCodec.dayTimestamp(for: endDate)
+        
+        let request = NSFetchRequest<NSManagedObject>(entityName: "CompactEvent")
+        request.predicate = NSPredicate(format: "dayTimestamp >= %d AND dayTimestamp <= %d", startDayTs, endDayTs)
+        request.sortDescriptors = [NSSortDescriptor(key: "dayTimestamp", ascending: true)]
+        
+        do {
+            let results = try viewContext.fetch(request)
+            return results.compactMap { obj -> (Int32, Data)? in
+                guard let dayTs = obj.value(forKey: "dayTimestamp") as? Int32,
+                      let data = obj.value(forKey: "data") as? Data else {
+                    return nil
+                }
+                return (dayTs, data)
+            }
+        } catch {
+            print("Failed to fetch compact data: \(error.localizedDescription)")
+            return []
         }
     }
     
@@ -100,33 +157,18 @@ class ActivityDataManager {
     func getStatistics(from startDate: Date, to endDate: Date) -> ActivityStats {
         var stats = ActivityStats(startDate: startDate, endDate: endDate)
         
-        let context = viewContext
-        
-        // 获取各类型事件数量
-        stats.keyboardCount = getEventCount(from: startDate, to: endDate, types: [.keyDown], context: context)
-        stats.mouseClickCount = getEventCount(from: startDate, to: endDate, types: [.leftMouseDown, .rightMouseDown, .otherMouseDown], context: context)
-        stats.scrollCount = getEventCount(from: startDate, to: endDate, types: [.scroll], context: context)
+        // 从压缩存储获取统计
+        let compactData = getCompactData(from: startDate, to: endDate)
+        for (_, data) in compactData {
+            let keyStats = CompactEventCodec.countKeyStats(from: data)
+            stats.keyboardCount += keyStats.values.reduce(0, +)
+            
+            let mouseStats = CompactEventCodec.countMouseStats(from: data)
+            stats.mouseClickCount += mouseStats.left + mouseStats.right + mouseStats.middle + mouseStats.other
+            stats.scrollCount += mouseStats.scroll
+        }
         
         return stats
-    }
-    
-    /// 获取事件数量
-    private func getEventCount(from startDate: Date, to endDate: Date, types: [ActivityEventType], context: NSManagedObjectContext) -> Int {
-        let request = NSFetchRequest<NSNumber>(entityName: "ActivityEvent")
-        request.resultType = .countResultType
-        
-        let typeValues = types.map { NSNumber(value: $0.rawValue) }
-        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "timestamp >= %@ AND timestamp < %@", startDate as NSDate, endDate as NSDate),
-            NSPredicate(format: "eventType IN %@", typeValues)
-        ])
-        
-        do {
-            return try context.count(for: request)
-        } catch {
-            print("Failed to count events: \(error.localizedDescription)")
-            return 0
-        }
     }
     
     // MARK: - 数据管理
@@ -157,27 +199,42 @@ class ActivityDataManager {
     
     /// 获取事件总数
     func getTotalEventCount() -> Int {
-        let request = NSFetchRequest<NSNumber>(entityName: "ActivityEvent")
-        request.resultType = .countResultType
+        var count = 0
         
+        let compactRequest = NSFetchRequest<NSManagedObject>(entityName: "CompactEvent")
         do {
-            return try viewContext.count(for: request)
+            let results = try viewContext.fetch(compactRequest)
+            for obj in results {
+                if let data = obj.value(forKey: "data") as? Data {
+                    count += data.count / 4  // 每个事件 4 字节
+                }
+            }
         } catch {
-            print("Failed to count total events: \(error.localizedDescription)")
-            return 0
+            print("Failed to count compact events: \(error.localizedDescription)")
         }
+        
+        return count
     }
     
     /// 清除所有数据
     func clearAllData(completion: (() -> Void)? = nil) {
         let context = persistentContainer.newBackgroundContext()
-        context.perform {
-            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "ActivityEvent")
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        context.perform { [weak self] in
+            let compactRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CompactEvent")
+            let compactDelete = NSBatchDeleteRequest(fetchRequest: compactRequest)
             
             do {
-                try context.execute(deleteRequest)
+                try context.execute(compactDelete)
                 try context.save()
+                
+                // 清除缓存
+                self?.cacheLock.lock()
+                self?.compactDataCache.removeAll()
+                self?.cacheLock.unlock()
+                
+                // 执行 VACUUM 回收磁盘空间
+                self?.vacuumDatabase()
+                
                 print("All activity data cleared")
             } catch {
                 print("Failed to clear data: \(error.localizedDescription)")
@@ -192,14 +249,25 @@ class ActivityDataManager {
     /// 清除指定日期之前的数据
     func clearDataBefore(date: Date, completion: (() -> Void)? = nil) {
         let context = persistentContainer.newBackgroundContext()
-        context.perform {
-            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "ActivityEvent")
-            fetchRequest.predicate = NSPredicate(format: "timestamp < %@", date as NSDate)
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        let cutoffDayTs = CompactEventCodec.dayTimestamp(for: date)
+        
+        context.perform { [weak self] in
+            let compactRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CompactEvent")
+            compactRequest.predicate = NSPredicate(format: "dayTimestamp < %d", cutoffDayTs)
+            let compactDelete = NSBatchDeleteRequest(fetchRequest: compactRequest)
             
             do {
-                try context.execute(deleteRequest)
+                try context.execute(compactDelete)
                 try context.save()
+                
+                // 清除过期缓存
+                self?.cacheLock.lock()
+                self?.compactDataCache = self?.compactDataCache.filter { $0.key >= cutoffDayTs } ?? [:]
+                self?.cacheLock.unlock()
+                
+                // 执行 VACUUM 回收磁盘空间
+                self?.vacuumDatabase()
+                
                 print("Old activity data cleared")
             } catch {
                 print("Failed to clear old data: \(error.localizedDescription)")
@@ -211,47 +279,49 @@ class ActivityDataManager {
         }
     }
     
+    /// 执行 VACUUM 命令回收 SQLite 磁盘空间
+    private func vacuumDatabase() {
+        guard let storeURL = persistentContainer.persistentStoreDescriptions.first?.url else {
+            print("Cannot find store URL for VACUUM")
+            return
+        }
+        
+        // 需要在没有活动连接的情况下执行 VACUUM
+        // 使用直接的 SQLite 连接
+        DispatchQueue.global(qos: .utility).async {
+            var db: OpaquePointer?
+            
+            if sqlite3_open(storeURL.path, &db) == SQLITE_OK {
+                var errMsg: UnsafeMutablePointer<CChar>?
+                
+                if sqlite3_exec(db, "VACUUM", nil, nil, &errMsg) == SQLITE_OK {
+                    print("Database VACUUM completed successfully")
+                } else {
+                    if let errMsg = errMsg {
+                        print("VACUUM failed: \(String(cString: errMsg))")
+                        sqlite3_free(errMsg)
+                    }
+                }
+                
+                sqlite3_close(db)
+            } else {
+                print("Failed to open database for VACUUM")
+            }
+        }
+    }
+    
     // MARK: - 键盘热力图数据
     
     /// 获取按键统计（按 keyCode 分组）
     func getKeyCodeStatistics(from startDate: Date, to endDate: Date) -> [Int16: Int] {
         var keyStats: [Int16: Int] = [:]
         
-        let request = NSFetchRequest<NSDictionary>(entityName: "ActivityEvent")
-        request.resultType = .dictionaryResultType
-        
-        // 按 keyCode 分组统计
-        let keyCodeExpr = NSExpression(forKeyPath: "keyCode")
-        let countExpr = NSExpression(forFunction: "count:", arguments: [NSExpression(forKeyPath: "timestamp")])
-        
-        let keyCodeDesc = NSExpressionDescription()
-        keyCodeDesc.name = "keyCode"
-        keyCodeDesc.expression = keyCodeExpr
-        keyCodeDesc.expressionResultType = .integer16AttributeType
-        
-        let countDesc = NSExpressionDescription()
-        countDesc.name = "count"
-        countDesc.expression = countExpr
-        countDesc.expressionResultType = .integer64AttributeType
-        
-        request.propertiesToFetch = [keyCodeDesc, countDesc]
-        request.propertiesToGroupBy = ["keyCode"]
-        
-        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "timestamp >= %@ AND timestamp < %@", startDate as NSDate, endDate as NSDate),
-            NSPredicate(format: "eventType == %d", ActivityEventType.keyDown.rawValue)
-        ])
-        
-        do {
-            let results = try viewContext.fetch(request)
-            for result in results {
-                if let keyCode = result["keyCode"] as? Int16,
-                   let count = result["count"] as? Int {
-                    keyStats[keyCode] = count
-                }
+        let compactData = getCompactData(from: startDate, to: endDate)
+        for (_, data) in compactData {
+            let stats = CompactEventCodec.countKeyStats(from: data)
+            for (keyCode, count) in stats {
+                keyStats[keyCode, default: 0] += count
             }
-        } catch {
-            print("Failed to fetch key statistics: \(error.localizedDescription)")
         }
         
         return keyStats
@@ -297,19 +367,16 @@ class ActivityDataManager {
     /// 获取鼠标统计
     func getMouseStatistics(from startDate: Date, to endDate: Date) -> MouseStats {
         var stats = MouseStats()
-        let context = viewContext
         
-        // 左键点击
-        stats.leftClickCount = getEventCount(from: startDate, to: endDate, types: [.leftMouseDown], context: context)
-        
-        // 右键点击
-        stats.rightClickCount = getEventCount(from: startDate, to: endDate, types: [.rightMouseDown], context: context)
-        
-        // 滚动
-        stats.scrollCount = getEventCount(from: startDate, to: endDate, types: [.scroll], context: context)
-        
-        // 其他按键（包括中键）
-        stats.otherClickCount = getEventCount(from: startDate, to: endDate, types: [.otherMouseDown], context: context)
+        let compactData = getCompactData(from: startDate, to: endDate)
+        for (_, data) in compactData {
+            let mouseStats = CompactEventCodec.countMouseStats(from: data)
+            stats.leftClickCount += mouseStats.left
+            stats.rightClickCount += mouseStats.right
+            stats.middleClickCount += mouseStats.middle
+            stats.scrollCount += mouseStats.scroll
+            stats.otherClickCount += mouseStats.other
+        }
         
         return stats
     }
@@ -347,8 +414,13 @@ class ActivityDataManager {
     /// 获取手势统计
     func getGestureStatistics(from startDate: Date, to endDate: Date) -> GestureStats {
         var stats = GestureStats()
-        let context = viewContext
-        stats.scrollCount = getEventCount(from: startDate, to: endDate, types: [.scroll], context: context)
+        
+        let compactData = getCompactData(from: startDate, to: endDate)
+        for (_, data) in compactData {
+            let mouseStats = CompactEventCodec.countMouseStats(from: data)
+            stats.scrollCount += mouseStats.scroll
+        }
+        
         return stats
     }
     
@@ -473,20 +545,20 @@ class ActivityDataManager {
     private func getKeyboardEventCount(from startDate: Date, to endDate: Date) -> Int {
         guard startDate < endDate else { return 0 }
         
-        let request = NSFetchRequest<NSNumber>(entityName: "ActivityEvent")
-        request.resultType = .countResultType
+        var count = 0
         
-        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "timestamp >= %@ AND timestamp < %@", startDate as NSDate, endDate as NSDate),
-            NSPredicate(format: "eventType == %d", ActivityEventType.keyDown.rawValue)
-        ])
-        
-        do {
-            return try viewContext.count(for: request)
-        } catch {
-            print("Failed to count keyboard events: \(error.localizedDescription)")
-            return 0
+        let compactData = getCompactData(from: startDate, to: endDate)
+        for (dayTs, data) in compactData {
+            let dayStart = CompactEventCodec.dayStart(from: dayTs)
+            count += CompactEventCodec.countKeyboardEvents(
+                from: data,
+                dayStart: dayStart,
+                startTime: startDate,
+                endTime: endDate
+            )
         }
+        
+        return count
     }
     
     // MARK: - 时间范围辅助方法
