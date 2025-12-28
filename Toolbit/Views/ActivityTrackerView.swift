@@ -93,45 +93,49 @@ struct ActivityTrackerView: View {
                         customDateRangePicker
                     }
                     
-                    // 键盘热力图 + 时间轴热力图（横向，在键盘上方）
+                    // 键盘热力图 + 时间轴 + 鼠标
                     GroupBox {
                         VStack(spacing: 12) {
-                            // 时间轴热力图（横向）
-                            TimelineHeatmapView(
-                                rangeType: timelineRangeType,
-                                customStart: selectedTimeRange == .custom ? customStartDate : nil,
-                                customEnd: selectedTimeRange == .custom ? customEndDate : nil
-                            )
+                            KeyboardHeatmapView(keyStats: combinedKeyStats) {
+                                // 时间轴热力图
+                                TimelineHeatmapView(
+                                    rangeType: timelineRangeType,
+                                    customStart: selectedTimeRange == .custom ? customStartDate : nil,
+                                    customEnd: selectedTimeRange == .custom ? customEndDate : nil
+                                )
+                            } rightContent: {
+                                // 鼠标热力图（隐藏标题）
+                                MouseHeatmapView(
+                                    leftClickCount: combinedMouseStats.left,
+                                    rightClickCount: combinedMouseStats.right,
+                                    middleClickCount: combinedMouseStats.middle,
+                                    scrollCount: combinedMouseStats.scroll,
+                                    otherClickCount: combinedMouseStats.other,
+                                    showTitle: false
+                                )
+                            }
                             
-                            // 键盘热力图
-                            KeyboardHeatmapView(keyStats: combinedKeyStats)
-                                .padding(.vertical, 8)
+                            // 底部统计
+                            HStack {
+                                Spacer()
+                                Text("键盘 \(combinedKeyStats.values.reduce(0, +)) 次")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("·")
+                                    .foregroundStyle(.tertiary)
+                                Text("鼠标 \(combinedMouseStats.left + combinedMouseStats.right + combinedMouseStats.middle + combinedMouseStats.scroll + combinedMouseStats.other) 次")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("·")
+                                    .foregroundStyle(.tertiary)
+                                Text("合计 \(combinedKeyStats.values.reduce(0, +) + combinedMouseStats.left + combinedMouseStats.right + combinedMouseStats.middle + combinedMouseStats.scroll + combinedMouseStats.other) 次")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                            }
                         }
-                    }
-                    
-                    // 鼠标和手势并排显示
-                    HStack(alignment: .top, spacing: 16) {
-                        // 鼠标热力图（使用合并后的数据）
-                        GroupBox {
-                            MouseHeatmapView(
-                                leftClickCount: combinedMouseStats.left,
-                                rightClickCount: combinedMouseStats.right,
-                                middleClickCount: combinedMouseStats.middle,
-                                scrollCount: combinedMouseStats.scroll,
-                                otherClickCount: combinedMouseStats.other
-                            )
-                            .padding(.vertical, 8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        
-                        // 手势可视化（仅双指滚动）
-                        GroupBox {
-                            GestureVisualizationView(
-                                scrollCount: combinedGestureScrollCount
-                            )
-                            .padding(.vertical, 8)
-                        }
-                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                     }
                     
                     // 数据管理

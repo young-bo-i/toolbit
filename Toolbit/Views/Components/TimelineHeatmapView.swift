@@ -83,6 +83,8 @@ struct TimelineHeatmapView: View {
     
     @StateObject private var cache = TimelineDataCache()
     @State private var viewWidth: CGFloat = 300
+    @State private var hoverLocation: CGFloat? = nil  // 鼠标 hover 位置
+    @State private var isHovering: Bool = false
     
     private let minSlotWidth: CGFloat = 8  // 最小格子宽度
     
@@ -138,8 +140,24 @@ struct TimelineHeatmapView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    // 当前时间标签（根据位置偏移）
-                    if showCurrentTimeIndicator && currentTimeRatio > 0.1 && currentTimeRatio < 0.9 {
+                    // Hover 时间标签（优先显示）
+                    if isHovering, let hoverX = hoverLocation {
+                        let hoverRatio = min(max(hoverX / width, 0), 1)
+                        let hoverTime = getTimeForRatio(hoverRatio)
+                        Text(formatHoverTime(hoverTime))
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(Color(nsColor: .controlBackgroundColor))
+                                    .shadow(color: .black.opacity(0.1), radius: 2)
+                            )
+                            .position(x: clampLabelPosition(hoverX, width: width), y: 6)
+                    }
+                    // 当前时间标签（hover 时隐藏）
+                    else if showCurrentTimeIndicator && currentTimeRatio > 0.1 && currentTimeRatio < 0.9 {
                         Text(currentTimeLabel)
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                             .foregroundStyle(.orange)
@@ -148,7 +166,7 @@ struct TimelineHeatmapView: View {
                 }
                 .frame(height: 14)
                 
-                // 热力条 + 当前时间指示线
+                // 热力条 + 当前时间指示线 + Hover 指示线
                 ZStack(alignment: .leading) {
                     // 热力条
                     HStack(spacing: 1) {
@@ -169,8 +187,26 @@ struct TimelineHeatmapView: View {
                             .frame(width: 2)
                             .offset(x: width * currentTimeRatio - 1)
                     }
+                    
+                    // Hover 指示线
+                    if isHovering, let hoverX = hoverLocation {
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.6))
+                            .frame(width: 1)
+                            .offset(x: hoverX)
+                    }
                 }
                 .frame(height: 16)
+                .onContinuousHover { phase in
+                    switch phase {
+                    case .active(let location):
+                        isHovering = true
+                        hoverLocation = location.x
+                    case .ended:
+                        isHovering = false
+                        hoverLocation = nil
+                    }
+                }
             }
             .onAppear {
                 cache.loadDataIfNeeded(
@@ -191,6 +227,42 @@ struct TimelineHeatmapView: View {
             }
         }
         .frame(height: 36)
+    }
+    
+    // MARK: - Hover 相关函数
+    
+    /// 根据位置比例获取对应的时间
+    private func getTimeForRatio(_ ratio: CGFloat) -> Date {
+        let totalDuration = fullRange.end.timeIntervalSince(fullRange.start)
+        let offset = totalDuration * Double(ratio)
+        return fullRange.start.addingTimeInterval(offset)
+    }
+    
+    /// 格式化 hover 时显示的时间
+    private func formatHoverTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        
+        switch rangeType {
+        case .today:
+            formatter.dateFormat = "HH:mm"
+        case .week:
+            formatter.dateFormat = "E HH:mm"
+        case .month:
+            formatter.dateFormat = "M/d HH:mm"
+        case .custom:
+            formatter.dateFormat = "M/d HH:mm"
+        }
+        
+        return formatter.string(from: date)
+    }
+    
+    /// 限制标签位置，防止超出边界
+    private func clampLabelPosition(_ x: CGFloat, width: CGFloat) -> CGFloat {
+        let labelWidth: CGFloat = 50  // 估计标签宽度
+        let minX = labelWidth / 2
+        let maxX = width - labelWidth / 2
+        return min(max(x, minX), maxX)
     }
     
     // MARK: - 时间格式化
@@ -230,8 +302,14 @@ struct TimeSlotCell: View {
     let maxCount: Int
     
     private var intensity: Double {
-        guard maxCount > 0 else { return 0 }
-        return Double(slot.count) / Double(maxCount)
+        guard maxCount > 0, slot.count > 0 else { return 0 }
+        // 使用对数缩放
+        let logCount = log(Double(slot.count) + 1)
+        let logMax = log(Double(maxCount) + 1)
+        guard logMax > 0 else { return 0 }
+        let normalized = logCount / logMax
+        // gamma 校正
+        return pow(normalized, 0.6)
     }
     
     private var backgroundColor: Color {
@@ -245,14 +323,37 @@ struct TimeSlotCell: View {
             return Color.gray.opacity(0.25)
         }
         
-        // 有数据：根据强度计算颜色
-        if intensity < 0.3 {
-            return Color.blue.opacity(0.3 + intensity * 0.4)
-        } else if intensity < 0.6 {
-            return Color.blue.opacity(0.5).blend(with: Color.orange.opacity(0.7), ratio: (intensity - 0.3) / 0.3)
-        } else {
-            return Color.orange.opacity(0.7).blend(with: Color.red.opacity(0.9), ratio: (intensity - 0.6) / 0.4)
-        }
+        // 有数据：使用与键盘相同的冷暖色阶
+        return interpolateColor(t: intensity)
+    }
+    
+    /// 插值计算颜色 - 冷到暖色阶（与键盘热力图一致）
+    private func interpolateColor(t: Double) -> Color {
+        // 冷暖色阶：深蓝 → 蓝 → 青 → 绿 → 黄 → 橙 → 红
+        let colors: [(r: Double, g: Double, b: Double)] = [
+            (0.192, 0.212, 0.584),  // #313595 深蓝色
+            (0.270, 0.459, 0.706),  // #4575B4 蓝色
+            (0.455, 0.678, 0.820),  // #74ADD1 浅蓝色
+            (0.671, 0.851, 0.914),  // #ABD9E9 淡青色
+            (0.878, 0.953, 0.973),  // #E0F3F8 极淡青
+            (0.996, 0.878, 0.565),  // #FEE090 淡黄色
+            (0.992, 0.682, 0.380),  // #FDAE61 橙黄色
+            (0.957, 0.427, 0.263),  // #F46D43 橙红色
+            (0.843, 0.188, 0.153),  // #D73027 红色
+        ]
+        
+        let segment = t * Double(colors.count - 1)
+        let index = min(Int(segment), colors.count - 2)
+        let localT = segment - Double(index)
+        
+        let c1 = colors[index]
+        let c2 = colors[index + 1]
+        
+        let r = c1.r + (c2.r - c1.r) * localT
+        let g = c1.g + (c2.g - c1.g) * localT
+        let b = c1.b + (c2.b - c1.b) * localT
+        
+        return Color(red: r, green: g, blue: b)
     }
     
     private var tooltipText: String {

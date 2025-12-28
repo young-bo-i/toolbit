@@ -1,10 +1,112 @@
 import SwiftUI
 
-// MARK: - 键盘热力图视图
-struct KeyboardHeatmapView: View {
+// MARK: - 热力图颜色计算器
+struct HeatmapColorCalculator {
     let keyStats: [Int16: Int]
     
-    // 计算最大按键次数用于颜色映射
+    // 使用对数缩放 + 百分位数归一化来处理极端值
+    private var sortedCounts: [Int] {
+        keyStats.values.filter { $0 > 0 }.sorted()
+    }
+    
+    /// 计算对数缩放后的强度值 (0-1)
+    /// 使用 log1p 避免 log(0) 问题，并用百分位数归一化
+    func intensity(for count: Int) -> Double {
+        guard count > 0 else { return 0 }
+        
+        let counts = sortedCounts
+        guard !counts.isEmpty else { return 0 }
+        
+        // 方案：对数缩放 + 分位数映射
+        // 1. 对数缩放压缩极端值
+        let logCount = log(Double(count) + 1)
+        let logMax = log(Double(counts.last ?? 1) + 1)
+        let logMin = log(Double(counts.first ?? 1) + 1)
+        
+        // 2. 归一化到 0-1
+        guard logMax > logMin else { return 0.5 }
+        let normalized = (logCount - logMin) / (logMax - logMin)
+        
+        // 3. 应用 gamma 校正，让中间值更明显
+        // gamma < 1 会让低值更亮，gamma > 1 会让高值更亮
+        let gamma = 0.6  // 让低频按键更容易看到
+        return pow(normalized, gamma)
+    }
+    
+    /// 根据强度获取颜色 - 冷暖色阶（蓝→红）
+    func color(for count: Int) -> Color {
+        guard count > 0 else {
+            return Color(nsColor: .controlBackgroundColor)
+        }
+        
+        let t = intensity(for: count)
+        return interpolateColor(t: t)
+    }
+    
+    /// 插值计算颜色 - 冷到暖色阶
+    /// 低频：冷色（深蓝） → 高频：暖色（红色）
+    private func interpolateColor(t: Double) -> Color {
+        // 冷暖色阶：深蓝 → 蓝 → 青 → 绿 → 黄 → 橙 → 红
+        let colors: [(r: Double, g: Double, b: Double)] = [
+            (0.192, 0.212, 0.584),  // #313595 深蓝色
+            (0.270, 0.459, 0.706),  // #4575B4 蓝色
+            (0.455, 0.678, 0.820),  // #74ADD1 浅蓝色
+            (0.671, 0.851, 0.914),  // #ABD9E9 淡青色
+            (0.878, 0.953, 0.973),  // #E0F3F8 极淡青
+            (0.996, 0.878, 0.565),  // #FEE090 淡黄色
+            (0.992, 0.682, 0.380),  // #FDAE61 橙黄色
+            (0.957, 0.427, 0.263),  // #F46D43 橙红色
+            (0.843, 0.188, 0.153),  // #D73027 红色
+        ]
+        
+        let segment = t * Double(colors.count - 1)
+        let index = min(Int(segment), colors.count - 2)
+        let localT = segment - Double(index)
+        
+        let c1 = colors[index]
+        let c2 = colors[index + 1]
+        
+        let r = c1.r + (c2.r - c1.r) * localT
+        let g = c1.g + (c2.g - c1.g) * localT
+        let b = c1.b + (c2.b - c1.b) * localT
+        
+        return Color(red: r, green: g, blue: b)
+    }
+    
+    /// 文字颜色 - 根据背景亮度自动选择
+    func textColor(for count: Int) -> Color {
+        guard count > 0 else { return .primary }
+        
+        let t = intensity(for: count)
+        // 中间浅色区域用深色文字，两端深色区域用白色文字
+        if t > 0.25 && t < 0.7 {
+            return Color(white: 0.15)
+        }
+        return .white
+    }
+}
+
+// MARK: - 键盘热力图视图
+struct KeyboardHeatmapView<TimelineContent: View, RightContent: View>: View {
+    let keyStats: [Int16: Int]
+    let timelineContent: TimelineContent
+    let rightContent: RightContent
+    
+    // 初始化器：带时间轴和右侧内容
+    init(keyStats: [Int16: Int], 
+         @ViewBuilder timelineContent: () -> TimelineContent,
+         @ViewBuilder rightContent: () -> RightContent) {
+        self.keyStats = keyStats
+        self.timelineContent = timelineContent()
+        self.rightContent = rightContent()
+    }
+    
+    // 颜色计算器
+    private var colorCalculator: HeatmapColorCalculator {
+        HeatmapColorCalculator(keyStats: keyStats)
+    }
+    
+    // 计算最大按键次数（用于显示）
     private var maxCount: Int {
         keyStats.values.max() ?? 1
     }
@@ -14,50 +116,45 @@ struct KeyboardHeatmapView: View {
         keyStats.values.reduce(0, +)
     }
     
+    // Top 5 按键
+    private var top5Keys: [(keyCode: Int16, count: Int)] {
+        keyStats.sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { (keyCode: $0.key, count: $0.value) }
+    }
+    
     var body: some View {
         VStack(spacing: 12) {
-            // 标题和统计
-            HStack {
-                Text("键盘热力图")
-                    .font(.headline)
-                Spacer()
-                Text("总计 \(totalCount) 次按键")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            // 顶部：时间轴
+            timelineContent
             
-            // 键盘布局
-            VStack(spacing: 4) {
-                // 功能键行
-                functionRow
+            // 主体区域：左侧图例 + 键盘 + 右侧内容（鼠标）
+            HStack(alignment: .center, spacing: 16) {
+                // 左侧：竖向热力图图例
+                verticalLegend
                 
-                // 数字行
-                numberRow
+                // 中间：键盘布局
+                VStack(spacing: 4) {
+                    functionRow
+                    numberRow
+                    qwertyRow
+                    asdfRow
+                    zxcvRow
+                    spaceRow
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .windowBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                )
                 
-                // QWERTY 行
-                qwertyRow
-                
-                // ASDF 行
-                asdfRow
-                
-                // ZXCV 行
-                zxcvRow
-                
-                // 空格行
-                spaceRow
+                // 右侧：外部传入的内容（鼠标）
+                rightContent
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .windowBackgroundColor))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-            )
-            
-            // 图例
-            heatmapLegend
         }
     }
     
@@ -70,9 +167,9 @@ struct KeyboardHeatmapView: View {
     // MARK: - 功能键行 (esc + F1-F12，每个约1.0357U，高度0.75U)
     private var functionRow: some View {
         HStack(spacing: keyGap) {
-            KeyCap(keyCode: 53, label: "esc", width: 41, height: fnKeyHeight, keyStats: keyStats, maxCount: maxCount)
+            KeyCap(keyCode: 53, label: "esc", width: 41, height: fnKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             ForEach(KeyboardLayout.functionKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: fnKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: fnKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
     }
@@ -81,7 +178,7 @@ struct KeyboardHeatmapView: View {
     private var numberRow: some View {
         HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.numberRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
     }
@@ -90,7 +187,7 @@ struct KeyboardHeatmapView: View {
     private var qwertyRow: some View {
         HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.qwertyRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
     }
@@ -99,7 +196,7 @@ struct KeyboardHeatmapView: View {
     private var asdfRow: some View {
         HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.asdfRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
     }
@@ -108,19 +205,17 @@ struct KeyboardHeatmapView: View {
     private var zxcvRow: some View {
         HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.zxcvRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
     }
     
     // MARK: - 空格行（含方向键）
-    // 方向键紧挨着右 Option 键
     private var spaceRow: some View {
         HStack(spacing: keyGap) {
             ForEach(KeyboardLayout.spaceRowKeys, id: \.keyCode) { key in
-                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: key.keyCode, label: key.label, width: key.width, height: keyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
-            // 方向键区域（紧挨着右 Option）
             arrowKeysView
         }
     }
@@ -128,134 +223,178 @@ struct KeyboardHeatmapView: View {
     // MARK: - 方向键（半高布局）
     private var arrowKeysView: some View {
         VStack(spacing: keyGap) {
-            // 上键居中
             HStack(spacing: keyGap) {
-                Spacer().frame(width: 42) // 1U + gap 占位
-                KeyCap(keyCode: 126, label: "↑", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                Spacer().frame(width: 42)
+                KeyCap(keyCode: 126, label: "↑", width: 40, height: arrowKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
                 Spacer().frame(width: 42)
             }
-            // 左下右
             HStack(spacing: keyGap) {
-                KeyCap(keyCode: 123, label: "←", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
-                KeyCap(keyCode: 125, label: "↓", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
-                KeyCap(keyCode: 124, label: "→", width: 40, height: arrowKeyHeight, keyStats: keyStats, maxCount: maxCount)
+                KeyCap(keyCode: 123, label: "←", width: 40, height: arrowKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
+                KeyCap(keyCode: 125, label: "↓", width: 40, height: arrowKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
+                KeyCap(keyCode: 124, label: "→", width: 40, height: arrowKeyHeight, keyStats: keyStats, colorCalculator: colorCalculator)
             }
         }
         .frame(height: keyHeight)
     }
     
-    // MARK: - 热力图图例
-    private var heatmapLegend: some View {
-        HStack(spacing: 8) {
-            Text("低")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            
-            // 渐变色条
-            LinearGradient(
-                colors: [
-                    Color.blue.opacity(0.1),
-                    Color.blue.opacity(0.3),
-                    Color.blue.opacity(0.5),
-                    Color.orange.opacity(0.7),
-                    Color.red.opacity(0.9)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .frame(width: 120, height: 12)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            
+    // MARK: - 竖向热力图图例
+    private var verticalLegend: some View {
+        VStack(spacing: 4) {
             Text("高")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             
-            Spacer()
+            // 竖向渐变色条 - 冷暖色阶（红→蓝）
+            LinearGradient(
+                colors: [
+                    Color(red: 0.843, green: 0.188, blue: 0.153),  // 红色
+                    Color(red: 0.957, green: 0.427, blue: 0.263),  // 橙红色
+                    Color(red: 0.992, green: 0.682, blue: 0.380),  // 橙黄色
+                    Color(red: 0.996, green: 0.878, blue: 0.565),  // 淡黄色
+                    Color(red: 0.878, green: 0.953, blue: 0.973),  // 极淡青
+                    Color(red: 0.671, green: 0.851, blue: 0.914),  // 淡青色
+                    Color(red: 0.455, green: 0.678, blue: 0.820),  // 浅蓝色
+                    Color(red: 0.270, green: 0.459, blue: 0.706),  // 蓝色
+                    Color(red: 0.192, green: 0.212, blue: 0.584),  // 深蓝色
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: 12, height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
             
-            // 显示最高按键
-            if let (topKeyCode, topCount) = keyStats.max(by: { $0.value < $1.value }) {
-                HStack(spacing: 4) {
-                    Text("最常用:")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(KeyboardLayout.keyCodeToLabel(topKeyCode))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    Text("(\(topCount)次)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+            Text("低")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    // MARK: - Top 5 按键视图（紧凑横向布局）
+    private var top5View: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("TOP 5")
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(.tertiary)
+            
+            // 横向排列的 Top 5 按键
+            HStack(spacing: 4) {
+                ForEach(Array(top5Keys.enumerated()), id: \.offset) { index, item in
+                    VStack(spacing: 2) {
+                        // 按键（模拟键帽样式）
+                        Text(KeyboardLayout.keyCodeToLabel(item.keyCode))
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(colorCalculator.textColor(for: item.count))
+                            .frame(width: 32, height: 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(colorCalculator.color(for: item.count))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                            )
+                        
+                        // 次数
+                        Text("\(item.count)")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
     }
 }
 
-// MARK: - 单个按键（优化版本 - 移除动画和阴影以提升性能）
+// 便捷初始化器
+extension KeyboardHeatmapView where TimelineContent == EmptyView, RightContent == EmptyView {
+    init(keyStats: [Int16: Int]) {
+        self.keyStats = keyStats
+        self.timelineContent = EmptyView()
+        self.rightContent = EmptyView()
+    }
+}
+
+extension KeyboardHeatmapView where RightContent == EmptyView {
+    init(keyStats: [Int16: Int], @ViewBuilder timelineContent: () -> TimelineContent) {
+        self.keyStats = keyStats
+        self.timelineContent = timelineContent()
+        self.rightContent = EmptyView()
+    }
+}
+
+// MARK: - 数字格式化（带单位）
+struct CountFormatter {
+    /// 格式化数字，超过一定值显示单位
+    /// 201 -> "201", 1100 -> "1.1K", 24000 -> "2.4W"
+    static func format(_ count: Int) -> String {
+        if count < 1000 {
+            return "\(count)"
+        } else if count < 10000 {
+            // 1000-9999 显示 K
+            let k = Double(count) / 1000.0
+            if k == Double(Int(k)) {
+                return "\(Int(k))K"
+            }
+            return String(format: "%.1fK", k)
+        } else {
+            // 10000+ 显示 W（万）
+            let w = Double(count) / 10000.0
+            if w == Double(Int(w)) {
+                return "\(Int(w))W"
+            }
+            return String(format: "%.1fW", w)
+        }
+    }
+}
+
+// MARK: - 单个按键（使用对数缩放的颜色计算）
 struct KeyCap: View {
     let keyCode: Int16
     let label: String
     let width: CGFloat
     var height: CGFloat = 36
     let keyStats: [Int16: Int]
-    let maxCount: Int
+    let colorCalculator: HeatmapColorCalculator
     
     private var count: Int {
         keyStats[keyCode] ?? 0
     }
     
-    private var intensity: Double {
-        guard maxCount > 0 else { return 0 }
-        return Double(count) / Double(maxCount)
-    }
-    
     private var backgroundColor: Color {
-        if count == 0 {
-            return Color(nsColor: .controlBackgroundColor)
-        }
-        
-        // 根据强度计算颜色：从蓝色到橙色到红色
-        if intensity < 0.3 {
-            return Color.blue.opacity(0.1 + intensity * 0.5)
-        } else if intensity < 0.6 {
-            return Color.blue.opacity(0.3).blend(with: Color.orange.opacity(0.5), ratio: (intensity - 0.3) / 0.3)
-        } else {
-            return Color.orange.opacity(0.5).blend(with: Color.red.opacity(0.8), ratio: (intensity - 0.6) / 0.4)
-        }
+        colorCalculator.color(for: count)
     }
     
     private var textColor: Color {
-        if intensity > 0.5 {
-            return .white
-        }
-        return .primary
+        colorCalculator.textColor(for: count)
+    }
+    
+    private var formattedCount: String {
+        CountFormatter.format(count)
     }
     
     var body: some View {
-        Text(label)
-            .font(.system(size: height > 20 ? (width > 50 ? 10 : 9) : 8, weight: .medium, design: .rounded))
-            .foregroundStyle(textColor)
-            .frame(width: width, height: height)
-            .background(
-                RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
-                    .fill(backgroundColor)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-            )
-            .help(count > 0 ? "\(label): \(count) 次" : label)
-    }
-}
-
-// MARK: - 颜色混合扩展
-extension Color {
-    func blend(with other: Color, ratio: Double) -> Color {
-        let ratio = max(0, min(1, ratio))
-        
-        // 简单的线性插值
-        return Color(
-            nsColor: NSColor(self).blended(withFraction: ratio, of: NSColor(other)) ?? NSColor(self)
+        VStack(spacing: 1) {
+            Text(label)
+                .font(.system(size: height > 20 ? (width > 50 ? 9 : 8) : 7, weight: .medium, design: .rounded))
+            
+            if count > 0 {
+                Text(formattedCount)
+                    .font(.system(size: height > 20 ? 7 : 6, weight: .regular, design: .monospaced))
+                    .opacity(0.8)
+            }
+        }
+        .foregroundStyle(textColor)
+        .frame(width: width, height: height)
+        .background(
+            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
+                .fill(backgroundColor)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: height > 20 ? 5 : 3)
+                .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+        )
+        .help(count > 0 ? "\(label): \(count) 次" : label)
     }
 }
 
@@ -371,7 +510,8 @@ struct KeyboardLayout {
     }
 }
 
-#Preview {
+// 测试数据：模拟断崖式领先的情况
+#Preview("正常分布") {
     KeyboardHeatmapView(keyStats: [
         0: 150,   // A
         1: 120,   // S
@@ -384,6 +524,26 @@ struct KeyboardLayout {
         13: 180,  // W
         14: 220,  // E
         15: 90    // R
+    ])
+    .padding()
+    .frame(width: 700)
+}
+
+#Preview("断崖式领先") {
+    // 空格键 5000 次，其他键 10-100 次
+    KeyboardHeatmapView(keyStats: [
+        0: 80,    // A
+        1: 60,    // S
+        2: 100,   // D
+        3: 40,    // F
+        49: 5000, // Space - 断崖式领先
+        36: 50,   // Return
+        51: 30,   // Delete
+        12: 15,   // Q
+        13: 90,   // W
+        14: 110,  // E
+        15: 45,   // R
+        55: 2000, // Command - 第二高
     ])
     .padding()
     .frame(width: 700)
